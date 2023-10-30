@@ -1,0 +1,40 @@
+name: lib/mokujin
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mokujin-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    container:
+      image: clojure:openjdk-17-tools-deps-slim-buster
+    steps:
+    - uses: actions/checkout@v4
+    - name: Cache Clojure deps
+      uses: actions/cache@v3
+      with:
+        path: /root/.m2
+        key: v1-deps-${{ hashFiles('./deps.edn') }}
+        restore-keys: |
+          v1-deps-
+          v1-deps-${{ hashFiles('./deps.edn') }}
+
+    - name: Run tests
+      run: clj -M:dev:test
+      env:
+        TZ: UTC
+
+    - name: Notification
+      if: always()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_COLOR: ${{ job.status }}
+        SLACK_ICON_EMOJI: ':robot_face:'
+        SLACK_TITLE: '🌴 Mokujin Tests'
+        SLACK_MESSAGE: ${{ job.status }}
+        SLACK_USERNAME: 'CI'
+        SLACK_FOOTER: ''
