@@ -1,13 +1,7 @@
 name: lib/mokujin
 
 on:
-  push:
-    paths:
-      - ./.github/**
-      - ./src/**
-      - ./test/**
-      - ./deps.edn
-
+  push
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
