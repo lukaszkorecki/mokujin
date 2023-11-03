@@ -1,0 +1,4 @@
+{:deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.9"}
+        ch.qos.logback/logback-classic {:mvn/version "1.4.11"
+                                        :exclusions [org.slf4j/slf4j-api]}
+        net.logstash.logback/logstash-logback-encoder {:mvn/version "7.4"}}}
