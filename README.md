@@ -2,9 +2,12 @@
 
 > Mokujin (木人 Wooden person?) is a character in the Tekken series of fighting games. It is a spiritually sensitive animated training dummy, and serves as a guardian of good against supernatural evil threats.
 
-## Just enough logging
+## Just enough (structured) logging
 
-`clojure.tools.logging` is Pretty Good :tm: but it's missing Mapped Diagnostic Context (MDC) support. What's that?
+`clojure.tools.logging` is Pretty Good :tm: but it's missing Mapped Diagnostic Context (MDC) support - a way of adding **structured** information to your logs.
+Mokujin wraps `clojure.tools.logging` and inject SLF4J's MDC into logging statements, if provided. It tries to be as efficient as possible, perserves the callers
+context (line numbers etc) and minimizes any overhead beyond managing the MDC.
+
 
 Rather than logging something like this:
 
@@ -19,37 +22,66 @@ Rather than logging something like this:
 
 ```
 
-You probably would be better off doing something like this, and structure your logs:
+You are (probably) be better off doing something like this, and structure your logs to avoid your log collector parsing them using regex patterns:
 
 
 ```clojure
+(defn create-user [{:keys [email]}]
+  {:id "foo" :email email})
+
 (require '[mokujin.log :as log])
 
-(defn do-singup [req]
+(defn do-sign-up [req]
   (log/with-context {:flow "signup" :email (:email (:body req))}
-    (let [user (create-user ...)]
+    (let [user (create-user req)]
       (if (:id user)
         (log/info {:id (:id user)} "success")
         (log/error "failed")))))
 
-
+(do-sign-up {:body  {:email "test@example.com"}})
 ```
 
-Mokujin wraps `clojure.tools.logging` and inject SLF4J's MDC into it. It's efficient as possible, and doesn't introduce any overhead beyond managing the MDC.
+It would produce the following, in plain text and JSON:
 
-By default Mokujin ships with Logback and Logback's Logstash appender for producing JSON logs. You can exclude them and use a different logging backend such as Log4j2.
+```
+2023-11-03 17:53:25,850 [app.server] [user] [INFO] success flow=signup, email=test@example.com, id=foo
+```
+
+```json
+{
+  "timestamp": "2023-11-03T17:53:25.850957Z",
+  "message": "success",
+  "logger_name": "user",
+  "thread_name": "app.server",
+  "level": "INFO",
+  "level_value": 20000,
+  "flow": "signup",
+  "email": "test@example.com",
+  "id": "foo"
+}
+
+
+```
+> *Note*
+> Output depends on the logging backend and appender configuration
+
+
+Furthermore, you can add/write a Ring middleware to inject request data to the logging context and make all your logging statements simpler.
+
+In my own projects, I'm using Mokujin with Logback and Logback's Logstash appender for producing JSON logs that get sent to a JSON-aware log collector.
+Technically, anything that supports SLF4j and  MDC should work with some configuration. See `examples` directory and Getting started section.
 
 
 ## API & Usage
 
-The API is close enough that Mokujin is *almost* a drop-in replacement for `c.t.logging`, **however** to force good practices, it **does not include** logging functions that support format strings.
+The API is close enough that Mokujin is *almost* a drop-in replacement for `c.t.logging`, **however** to force good practices,
+it **does not include** logging functions that support format strings e.g. `log/infof` or `log/errorf`.
 That's because in 99% of the cases where I'd use `log/infof` what I wanted to do was `(log/info context "message")` instead.
+In cases where you really really want to use formatted strings, this Works Just Fine :tm: :
+```
+(log/info (format "thing %s happened to %s" thing-a thing-b))
+```
 
-
-If you really have to, you can do something like this `(log/warn (format "message %s" arg))`
-
-
-Supported logging functions:
 
 ```clojure
 (log/info [msg] [ctx msg])
@@ -79,14 +111,24 @@ To get started, add Mokujin to your `deps.edn`
  io.github.lukaszkorecki/mokujin {:git/sha "....."}
 ```
 
+But wait, **you're not done yet**! You need to include a logging backend which suports MDC. For Logback, this would be:
+
+
+```clojure
+{io.github.lukaszkorecki/mokujin {:git/sha "...." :git/tag ".... "}
+ org.slf4j/jcl-over-slf4j {:mvn/version "2.0.9"}
+ ch.qos.logback/logback-classic {:mvn/version "1.4.11"
+                                 :exclusions [org.slf4j/slf4j-api]}
+ ;; for JSON output, you can use:
+ net.logstash.logback/logstash-logback-encoder {:mvn/version "7.4"}}
+```
+
 And you're *almost ready to go*, if you're using Logback, you need to drop some configuration:
 
 
-### Configuration
+### Sample Logbackk configuration
 
 Here's my Logback configuration that I use in all production projects, with logs shipped to something that understands JSON/structured logging (Loki, Better Stack's Logs etc)
-
-
 Production config, stored in `resources/logback.xml`:
 
 
@@ -95,7 +137,7 @@ Production config, stored in `resources/logback.xml`:
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="net.logstash.logback.encoder.LogstashEncoder">
       <fieldNames>
-      <!-- rename @timestamp to timestamp -->
+        <!-- rename @timestamp to timestamp -->
         <timestamp>timestamp</timestamp>
         <!-- drop @version field, we don't need it -->
         <version>[ignore]</version>
@@ -103,11 +145,11 @@ Production config, stored in `resources/logback.xml`:
     </encoder>
   </appender>
 
-<!-- whatever ignores you need -->
+  <!-- whatever ignores you need -->
   <logger name="lockjaw.core" level="WARN" />
   <logger name="taskmaster.async" level="ERROR" />
   <logger name="athrun" level="ERROR" />
-  <logger name="utility-belt.sql.component.connection-pool" level="OFF" />
+  <logger name="utility-belt.sql" level="OFF" />
   <logger name="com.zaxxer.hikari.HikariDataSource" level="OFF" />
 
 

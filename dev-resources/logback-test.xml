@@ -1,5 +1,11 @@
 <configuration scan="true" scanPeriod="10 seconds">
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%date [%thread] [%logger] [%level] %msg %mdc%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="STDOUT_JSON" class="ch.qos.logback.core.ConsoleAppender">
     <encoder class="net.logstash.logback.encoder.LogstashEncoder">
       <fieldNames>
         <timestamp>timestamp</timestamp>
@@ -9,8 +15,12 @@
   </appender>
 
 
+  <!-- <root level="info"> -->
+  <!--   <appender-ref ref="STDOUT" /> -->
+  <!-- </root> -->
+
   <root level="info">
-    <appender-ref ref="STDOUT" />
+    <appender-ref ref="STDOUT_JSON" />
   </root>
 
 
