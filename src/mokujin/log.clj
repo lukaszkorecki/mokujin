@@ -94,3 +94,14 @@
      `(with-context ~ctx
         (log/log :error ~exc ~msg))
      (meta &form))))
+
+(defmacro showcase []
+  `(do
+     (info {:some "context"} "hello")
+     (info "no context")
+     (with-context {"some" "ctx"}
+       (with-context {:nested "true"}
+         (warn "hello")
+         (info "nested"))
+
+       (error {:error "yes"} (ex-info "oh no" {:exc :data}) "oh no"))))

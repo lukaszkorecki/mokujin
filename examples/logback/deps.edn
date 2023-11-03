@@ -1,7 +1,12 @@
 {:paths ["." "resources"]
+ :main-opts ["-m" "core"]
+ :deps {mokujin/mokujin {:local/root "../../"}
+        org.slf4j/jcl-over-slf4j {:mvn/version "2.0.9"}
+        ch.qos.logback/logback-classic {:mvn/version "1.4.11"
+                                        :exclusions [org.slf4j/slf4j-api]}
+        net.logstash.logback/logstash-logback-encoder {:mvn/version "7.4"}}
 
- :deps {io.github.lukaszkorecki/mokujin {:git/sha "b00f8627ca0c4a26b10f40bbd8de14e7e6e50fbf"
-                                         :git/url "git@github.com:lukaszkorecki/mokujin.git"}
-        io.github.lukaszkorecki/mokjuin-logback {:git/sha "b00f8627ca0c4a26b10f40bbd8de14e7e6e50fbf"
-                                                 :deps/root "dist/logback"
-                                                 :git/url "git@github.com:lukaszkorecki/mokujin.git"}}}
+ :aliases {:run {:main-opts ["-m" "core"]}
+           :stable {:extra-deps
+                    {io.github.lukaszkorecki/mokujin {:git/sha "b00f8627ca0c4a26b10f40bbd8de14e7e6e50fbf"
+                                                      :git/url "git@github.com:lukaszkorecki/mokujin.git"}}}}}

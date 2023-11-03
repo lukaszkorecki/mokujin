@@ -3,4 +3,4 @@
 
 (defn -main
   [& _args]
-  (log/info {:some "context"} "hello"))
+  (log/showcase))
