@@ -26,6 +26,6 @@ jobs:
           v1-deps-${{ hashFiles('./deps.edn') }}
 
     - name: Run tests
-      run: clj -M:test
+      run: clj -M:dev:test
       env:
         TZ: UTC
