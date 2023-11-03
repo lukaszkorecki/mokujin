@@ -1,0 +1,7 @@
+{:paths ["." "resources"]
+
+ :deps {io.github.lukaszkorecki/mokujin {:git/sha "b00f8627ca0c4a26b10f40bbd8de14e7e6e50fbf"
+                                         :git/url "git@github.com:lukaszkorecki/mokujin.git"}
+        io.github.lukaszkorecki/mokjuin-logback {:git/sha "b00f8627ca0c4a26b10f40bbd8de14e7e6e50fbf"
+                                                 :deps/root "dist/logback"
+                                                 :git/url "git@github.com:lukaszkorecki/mokujin.git"}}}
