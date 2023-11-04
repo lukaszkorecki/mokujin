@@ -31,7 +31,7 @@ jobs:
         TZ: UTC
 
     - name: Verify logback example
-      run: cd example/logback && clj -M:run
+      run: cd examples/logback && clj -M:run
 
     - name: Verify log4j2 example
-      run: cd example/log4j2 && clj -M:run
+      run: cd examples/log4j2 && clj -M:run
