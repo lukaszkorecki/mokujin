@@ -95,7 +95,7 @@
         (log/log :error ~exc ~msg))
      (meta &form))))
 
-(defmacro showcase []
+(defmacro log-all []
   `(do
      (info {:some "context"} "hello")
      (info "no context")
@@ -104,4 +104,5 @@
          (warn "hello")
          (info "nested"))
 
-       (error {:error "yes"} (ex-info "oh no" {:exc :data}) "oh no"))))
+       (error {:error "yes"} (ex-info "oh no" {:exc :data}) "oh no"))
+     true))

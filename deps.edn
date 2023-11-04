@@ -4,6 +4,9 @@
         org.slf4j/slf4j-api {:mvn/version "2.0.9"}}
 
  :aliases {:dev {:extra-paths ["dev-resources"]
+                 :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
+                            "-Duser.timezone=UTC"
+                            "-Dfile.encoding=UTF-8"]
                  :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.9"}
                               ch.qos.logback/logback-classic {:mvn/version "1.4.11"
                                                               :exclusions [org.slf4j/slf4j-api]}
@@ -11,8 +14,13 @@
 
            :test {:main-opts ["-m" "kaocha.runner"]
                   :extra-paths ["dev-resources" "test"]
-                  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
-                             "-Duser.timezone=UTC"
-                             "-Dfile.encoding=UTF-8"]
+
                   :extra-deps {cheshire/cheshire {:mvn/version "5.12.0"}
-                               lambdaisland/kaocha {:mvn/version "1.87.1366"}}}}}
+                               lambdaisland/kaocha {:mvn/version "1.87.1366"}}}
+
+           :benchmark {:main-opts ["-m" "mokujin.log-bench"]
+                       :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
+                                  "-Duser.timezone=UTC"
+                                  "-Dfile.encoding=UTF-8"]
+                       :extra-paths ["bench"]
+                       :extra-deps {criterium/criterium {:mvn/version "0.4.6"}}}}}
