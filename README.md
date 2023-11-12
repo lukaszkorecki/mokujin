@@ -1,6 +1,11 @@
 # Mokujin
 
+<img src="https://static.wikia.nocookie.net/topstrongest/images/1/15/Mokujin_TTT2.png/revision/latest/scale-to-width-down/1000?cb=20200503180655" align="right" height="250" />
+
 > Mokujin (木人 Wooden person?) is a character in the Tekken series of fighting games. It is a spiritually sensitive animated training dummy, and serves as a guardian of good against supernatural evil threats.
+
+> **Warning**
+> While Mokujin has been used in live, production applications - it's still under *some* development, consider the API kinda-stable, with possible small changes
 
 ## Just enough (structured) logging
 
@@ -104,8 +109,8 @@ You can use `with-context` macro, to set context for the whole block. Contexts c
 
 To get started, add Mokujin to your `deps.edn`
 
-> No Maven releases available yet!
-
+> **Note**
+> While I'm finalizing Mokujin's internals, there's no Maven (Clojars) available yet, use `git` dependency for now
 
 ```
  io.github.lukaszkorecki/mokujin {:git/sha "....."}
@@ -126,7 +131,7 @@ But wait, **you're not done yet**! You need to include a logging backend which s
 And you're *almost ready to go*, if you're using Logback, you need to drop some configuration:
 
 
-### Sample Logbackk configuration
+### Sample Logback configuration
 
 Here's my Logback configuration that I use in all production projects, with logs shipped to something that understands JSON/structured logging (Loki, Better Stack's Logs etc)
 Production config, stored in `resources/logback.xml`:
@@ -180,4 +185,4 @@ Development/test config, stored in `dev-resources/logback-test.xml`:
 ## TODO
 
 - [ ] Maven release?
-- [ ] Finalize `log/error` API
+- [ ] Finalize `log/error` API - it works, but there are cases where its usage can be confusing
