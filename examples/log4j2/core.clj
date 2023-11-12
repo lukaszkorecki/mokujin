@@ -3,4 +3,4 @@
 
 (defn -main
   [& _args]
-  (log/showcase))
+  (log/log-all))
