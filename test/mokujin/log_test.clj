@@ -42,7 +42,7 @@
   (testing "after"
     (is (nil? (MDC/get "foo")))))
 
-(deftest mds-doesnt-spill-over-on-error-with-context
+(deftest mdcs-doesnt-spill-over-on-error-with-context
   (testing "init state"
     (is (nil? (MDC/get "foo"))))
   (try
@@ -56,7 +56,7 @@
   (testing "after"
     (is (nil? (MDC/get "foo")))))
 
-(deftest mds-doesnt-spill-over-on-error-in-message
+(deftest mdcs-doesnt-spill-over-on-error-in-message
   (testing "init state"
     (is (nil? (MDC/get "foo"))))
   (try
@@ -69,6 +69,12 @@
     (is (not= "bar" (MDC/get "foo")))
     (is (nil? (MDC/get "foo")))))
 
+(deftest mdc-always-uses-snake-case
+  (log/with-context {:foo-bar "baz" :qualified.keyword/test "bar"}
+    (log/info "ahem")
+    (is (= "baz" (MDC/get "foo_bar")))
+    (is (= "bar" (MDC/get "qualified_keyword_test")))))
+
 (deftest structured-log-test
   (run-in-thread (fn structured' []
                    (log/info "foo")
@@ -76,6 +82,7 @@
                      (log/warn {:foo "bar"} "qux"))
                    (log/error "oh no")
                    (log/with-context {:foo "bar"}
+                     (log/infof "oh no %s" "formatted")
                      (log/error "oh no again"))
                    (log/with-context {:foo "bar"}
                      (try
@@ -104,6 +111,13 @@
              :stack_trace nil
              :thread_name "test"}
             {:foo "bar"
+             :level "INFO"
+             :level_value 20000
+             :logger_name "mokujin.log-test"
+             :message "oh no formatted"
+             :stack_trace nil
+             :thread_name "test"}
+            {:foo "bar"
              :level "ERROR"
              :level_value 40000
              :logger_name "mokujin.log-test"
@@ -116,7 +130,7 @@
              :level_value 40000
              :logger_name "mokujin.log-test"
              :message "oh no again again"
-             :stack_trace {:count 4, :message "clojure.lang.ExceptionInfo: this is exception"}
+             :stack_trace {:count 4 :message "clojure.lang.ExceptionInfo: this is exception"}
              :thread_name "test"}]
            captured-logs))))
 
@@ -139,43 +153,43 @@
                                                  (log/error {:fail true} e "oh no again again"))))))]))
 
   (let [captured-logs (parse-captured-logs)]
-    (is (= [{:level "INFO",
-             :level_value 20000,
-             :logger_name "mokujin.log-test",
-             :message "foo",
-             :stack_trace nil,
+    (is (= [{:level "INFO"
+             :level_value 20000
+             :logger_name "mokujin.log-test"
+             :message "foo"
+             :stack_trace nil
              :thread_name "test-1"}
 
-            {:level "INFO",
-             :level_value 20000,
-             :logger_name "mokujin.log-test",
-             :message "bar",
-             :nested "true",
-             :stack_trace nil,
+            {:level "INFO"
+             :level_value 20000
+             :logger_name "mokujin.log-test"
+             :message "bar"
+             :nested "true"
+             :stack_trace nil
              :thread_name "test-1"}
-            {:foo "bar",
-             :level "WARN",
-             :level_value 30000,
-             :logger_name "mokujin.log-test",
-             :message "qux",
-             :nested "for real",
-             :stack_trace nil,
+            {:foo "bar"
+             :level "WARN"
+             :level_value 30000
+             :logger_name "mokujin.log-test"
+             :message "qux"
+             :nested "for real"
+             :stack_trace nil
              :thread_name "test-1"}]
            (filter #(= (:thread_name %) "test-1") captured-logs)))
 
-    (is (= [{:foo "bar2",
-             :level "ERROR",
-             :level_value 40000,
-             :logger_name "mokujin.log-test",
-             :message "oh no",
-             :stack_trace nil,
+    (is (= [{:foo "bar2"
+             :level "ERROR"
+             :level_value 40000
+             :logger_name "mokujin.log-test"
+             :message "oh no"
+             :stack_trace nil
              :thread_name "test-2"}
-            {:fail "true",
-             :foo "bar2",
-             :level "ERROR",
-             :level_value 40000,
-             :logger_name "mokujin.log-test",
-             :message "oh no again again",
-             :stack_trace {:count 4 :message "java.lang.AssertionError: Assert failed: false"},
+            {:fail "true"
+             :foo "bar2"
+             :level "ERROR"
+             :level_value 40000
+             :logger_name "mokujin.log-test"
+             :message "oh no again again"
+             :stack_trace {:count 4 :message "java.lang.AssertionError: Assert failed: false"}
              :thread_name "test-2"}]
            (filter #(= (:thread_name %) "test-2") captured-logs)))))

@@ -80,19 +80,29 @@ Technically, anything that supports SLF4j and  MDC should work with some configu
 ## API & Usage
 
 The API is close enough that Mokujin is *almost* a drop-in replacement for `c.t.logging`, **however** to force good practices,
-it **does not include** logging functions that support format strings e.g. `log/infof` or `log/errorf`.
+logging functions that support format strings e.g. `log/infof` or `log/errorf` **do not suport the context map**.
+
 That's because in 99% of the cases where I'd use `log/infof` what I wanted to do was `(log/info context "message")` instead.
 In cases where you really really want to use formatted strings, this Works Just Fine :tm: :
-```
-(log/info (format "thing %s happened to %s" thing-a thing-b))
+
+```clojure
+(log/with-context {:some :ctx}
+  (log/infof "thing %s happened to %s" thing-a thing-b))
 ```
 
+
+### Full API
 
 ```clojure
 (log/info [msg] [ctx msg])
 (log/warn [msg] [ctx msg])
 (log/debug [msg] [ctx msg])
 (log/error [msg] [exc msg] [ctx exc msg])
+(log/infof [fmt & fmt-args])
+(log/warnf [fmt & fmt-args])
+(log/debugf [fmt & fmt-args])
+(log/errorf [fmt & fmt-args])
+(log/with-context [ctx & body])
 ```
 
 > **Note**
