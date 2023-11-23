@@ -75,6 +75,13 @@
     (is (= "baz" (MDC/get "foo_bar")))
     (is (= "bar" (MDC/get "qualified_keyword_test")))))
 
+(deftest ingores-tags-with-no-value
+  (log/with-context {:foo nil :aha "" :hello "there"}
+    (log/info "ahem")
+    (is (nil? (MDC/get "foo")))
+    (is (nil? (MDC/get "aha")))
+    (is (= "there" (MDC/get "hello")))))
+
 (deftest structured-log-test
   (run-in-thread (fn structured' []
                    (log/info "foo")
@@ -148,7 +155,6 @@
                                              (log/error "oh no")
                                              (try
                                                (assert false)
-
                                                (catch AssertionError e
                                                  (log/error {:fail true} e "oh no again again"))))))]))
 

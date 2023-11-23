@@ -13,13 +13,15 @@
 
 (def format-key (memoize format-key*))
 
+(defn not-blank? [v] (not (str/blank? (str v))))
+
 (defn valid-key? [key]
-  (or (and (string? key) (not (str/blank? key)))
+  (or (and (string? key) (not-blank? key))
       (keyword? key)))
 
 (defn add-context [ctx]
   (mapv (fn [[k v]]
-          (when (valid-key? k)
+          (when (and (valid-key? k) (not-blank? v))
             (MDC/put (format-key k) (str v))))
         ctx))
 
