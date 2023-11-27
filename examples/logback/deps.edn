@@ -2,11 +2,11 @@
  :main-opts ["-m" "core"]
  :deps {mokujin/mokujin {:local/root "../../"}
         org.slf4j/jcl-over-slf4j {:mvn/version "2.0.9"}
-        ch.qos.logback/logback-classic {:mvn/version "1.4.11"
+        ch.qos.logback/logback-classic {:mvn/version "1.4.12"
                                         :exclusions [org.slf4j/slf4j-api]}
         net.logstash.logback/logstash-logback-encoder {:mvn/version "7.4"}}
 
  :aliases {:run {:main-opts ["-m" "core"]}
            :stable {:extra-deps
-                    {io.github.lukaszkorecki/mokujin {:git/sha "8b13be21a24f1a567f03ca10d90844196ce98d79"
+                    {io.github.lukaszkorecki/mokujin {:git/sha "104bae2876f7a47a335eaecda84591a7b8ca6e43"
                                                       :git/url "git@github.com:lukaszkorecki/mokujin.git"}}}}}

@@ -11,5 +11,5 @@
 
  :aliases {:run {:main-opts ["-m" "core"]}
            :stable {:extra-deps
-                    {io.github.lukaszkorecki/mokujin {:git/sha "8b13be21a24f1a567f03ca10d90844196ce98d79"
+                    {io.github.lukaszkorecki/mokujin {:git/sha "104bae2876f7a47a335eaecda84591a7b8ca6e43"
                                                       :git/url "git@github.com:lukaszkorecki/mokujin.git"}}}}}
