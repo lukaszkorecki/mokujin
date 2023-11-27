@@ -1,5 +1,4 @@
-
-.PHONY: test test-all test-logback test-log4j2 update-deps
+.PHONY: test test-all test-logback test-log4j2 update-deps benchmark
 
 
 test-all: test test-logback test-log4j2
@@ -12,6 +11,8 @@ test-logback:
 test-log4j2:
 	cd examples/log4j2 && clj -M:run
 
+benchmark:
+	clj -M:benchmark
 
 update-deps:
 	clj -M:dev/outdated

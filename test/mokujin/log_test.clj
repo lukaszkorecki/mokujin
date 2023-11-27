@@ -8,7 +8,11 @@
   (:import
    (org.slf4j MDC)))
 
-(defn- parse-captured-logs []
+(set! *warn-on-reflection* true)
+
+(defn- parse-captured-logs
+  "Hooks into Kaocha's capture-output plugin to parse the logs. Easier than digging into the clojure.toools.logging internals."
+  []
   (->> (deref kaocha.plugin.capture-output/active-buffers)
        first
        kaocha.plugin.capture-output/read-buffer
@@ -25,7 +29,7 @@
   ([f]
    (run-in-thread "test" f))
   ([thread-name f]
-   (let [t (Thread. f)]
+   (let [t (Thread. ^Runnable f)]
      (.setName t thread-name)
      (.start t)
      (.join t))))
@@ -37,7 +41,9 @@
   (testing "with context"
     (log/with-context {:foo "bar"}
       (log/info {:bar "baz"} "ahem")
-      (is (= "bar" (MDC/get "foo")))))
+      (is (= "bar" (MDC/get "foo")))
+
+      (is (= {"foo" "bar"} (log/current-context)))))
 
   (testing "after"
     (is (nil? (MDC/get "foo")))))
@@ -62,6 +68,7 @@
   (try
     (log/info {:foo "bar"} (format "%s" (throw (Exception. "foo"))))
     (catch Exception _err
+      (is (= {} (log/current-context)))
       (testing "after catch"
         (is (not= "bar" (MDC/get "foo"))))))
 
@@ -69,11 +76,32 @@
     (is (not= "bar" (MDC/get "foo")))
     (is (nil? (MDC/get "foo")))))
 
-(deftest mdc-always-uses-snake-case
+(deftest nested-contexts
+  (log/with-context {:level-zero "0"}
+    (run-in-thread
+     (fn nested' []
+       (log/with-context {:level-one "yes"}
+         (log/with-context {:level-two "yes"}
+           (log/info {:level-three "yes"} "ahem"))))))
+
+  (let [captured-logs (parse-captured-logs)]
+    (testing "contexts can be nested, but only work within current thread"
+      (is (= [{:level "INFO"
+               :level_one "yes"
+               :level_three "yes"
+               :level_two "yes"
+               :level_value 20000
+               :logger_name "mokujin.log-test"
+               :message "ahem"
+               :stack_trace nil
+               :thread_name "test"}]
+             captured-logs)))))
+
+(deftest mdc+qualified-keywords
   (log/with-context {:foo-bar "baz" :qualified.keyword/test "bar"}
     (log/info "ahem")
     (is (= "baz" (MDC/get "foo_bar")))
-    (is (= "bar" (MDC/get "qualified_keyword_test")))))
+    (is (= "bar" (MDC/get "test")))))
 
 (deftest ingores-tags-with-no-value
   (log/with-context {:foo nil :aha "" :hello "there"}

@@ -11,6 +11,7 @@
       <fieldNames>
         <timestamp>timestamp</timestamp>
         <version>[ignore]</version>
+        <levelValue>[ignore]</levelValue>
       </fieldNames>
     </encoder>
   </appender>

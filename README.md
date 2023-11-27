@@ -5,14 +5,24 @@
 > Mokujin (木人 Wooden person?) is a character in the Tekken series of fighting games. It is a spiritually sensitive animated training dummy, and serves as a guardian of good against supernatural evil threats.
 
 > **Warning**
-> While Mokujin has been used in live, production applications - it's still under *some* development, consider the API kinda-stable, with possible small changes
+> While Mokujin has been used in live, production applications - it's still under *active* development, consider the API stable-ish, with possible small changes here and there
 
 ## Just enough (structured) logging
 
-`clojure.tools.logging` is Pretty Good :tm: but it's missing Mapped Diagnostic Context (MDC) support - a way of adding **structured** information to your logs.
-Mokujin wraps `clojure.tools.logging` and inject SLF4J's MDC into logging statements, if provided. It tries to be as efficient as possible, perserves the callers
-context (line numbers etc) and minimizes any overhead beyond managing the MDC.
 
+### Rationalle
+
+`clojure.tools.logging` is Good Enough :tm: but it's missing [Mapped Diagnostic Context (MDC)](https://logback.qos.ch/manual/mdc.html) support - as
+way of adding **structured** information to your logs.
+
+
+Mokujin wraps `clojure.tools.logging` and inject SLF4J's MDC into logging statements, if provided. It tries to maintain balance between
+features and the API of a widely used library. While effort was made to keep things as efficient as possible, it's been used in applications that
+do a lot of I/O, where wait times far exceeds the impact of extra operations required to manipulate the MDC.
+You can run the benchmark via `clj -M:benchmark`.
+
+
+### Show me the codes!
 
 Rather than logging something like this:
 
