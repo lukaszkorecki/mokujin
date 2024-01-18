@@ -7,6 +7,10 @@
 > **Warning**
 > While Mokujin has been used in live, production applications - it's still under *active* development, consider the API stable-ish, with possible small changes here and there
 
+
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin)
+
+
 ## Just enough (structured) logging
 
 
@@ -172,14 +176,12 @@ Example:
 # Getting started
 
 
-To get started, add Mokujin to your `deps.edn`
+To get started, add Mokujin to your `deps.edn` or `project.cj`
 
-> **Note**
-> While I'm finalizing Mokujin's internals, there's no Maven (Clojars) available yet, use `git` dependency for now
 
-```
- io.github.lukaszkorecki/mokujin {:git/sha "....."}
-```
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin)
+
+
 
 But wait, **you're not done yet**! You need to include a logging backend which suports MDC. For Logback, this would be:
 
