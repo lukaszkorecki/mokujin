@@ -34,6 +34,17 @@
      (.start t)
      (.join t))))
 
+(deftest merging-mdc-test
+  (is (= {} (MDC/getCopyOfContextMap)))
+  (log/with-context {"one" "two" :three :four}
+    (is (= {"one" "two" "three" "four"} (MDC/getCopyOfContextMap)))
+
+    (log/with-context {"five" :six}
+      (is (= {"one" "two" "three" "four" "five" "six"} (MDC/getCopyOfContextMap))))
+
+    (is (= {"one" "two" "three" "four"} (MDC/getCopyOfContextMap))))
+  (is (= {} (MDC/getCopyOfContextMap))))
+
 (deftest mdc-doesnt-spill-over-when-using-with-context
   (testing "init state"
     (is (nil? (MDC/get "foo"))))
@@ -90,7 +101,6 @@
                :level_one "yes"
                :level_three "yes"
                :level_two "yes"
-               :level_value 20000
                :logger_name "mokujin.log-test"
                :message "ahem"
                :stack_trace nil
@@ -103,71 +113,55 @@
     (is (= "baz" (MDC/get "foo_bar")))
     (is (= "bar" (MDC/get "test")))))
 
-(deftest ingores-tags-with-no-value
+(deftest works-with-tags-with-no-value
   (log/with-context {:foo nil :aha "" :hello "there"}
     (log/info "ahem")
-    (is (nil? (MDC/get "foo")))
-    (is (nil? (MDC/get "aha")))
-    (is (= "there" (MDC/get "hello")))))
+    (is (= {"aha" ""
+            "foo" ""
+            "hello" "there"}
+           (into {} (MDC/getCopyOfContextMap))))))
 
 (deftest structured-log-test
   (run-in-thread (fn structured' []
-                   (log/info "foo")
+                   (log/info "one")
                    (log/with-context {:nested true}
-                     (log/warn {:foo "bar"} "qux"))
-                   (log/error "oh no")
-                   (log/with-context {:foo "bar"}
-                     (log/infof "oh no %s" "formatted")
-                     (log/error "oh no again"))
-                   (log/with-context {:foo "bar"}
-                     (try
-                       (throw (ex-info "this is exception" {}))
-                       (catch Exception e
-                         (log/error {:fail true} e "oh no again again"))))))
-  (let [captured-logs (parse-captured-logs)]
-    (is (= [{:level "INFO"
-             :level_value 20000
-             :logger_name "mokujin.log-test"
-             :message "foo"
-             :stack_trace nil
-             :thread_name "test"}
-            {:foo "bar"
-             :nested "true"
-             :level "WARN"
-             :level_value 30000
-             :logger_name "mokujin.log-test"
-             :message "qux"
-             :stack_trace nil
-             :thread_name "test"}
-            {:level "ERROR"
-             :level_value 40000
-             :logger_name "mokujin.log-test"
-             :message "oh no"
-             :stack_trace nil
-             :thread_name "test"}
-            {:foo "bar"
-             :level "INFO"
-             :level_value 20000
-             :logger_name "mokujin.log-test"
-             :message "oh no formatted"
-             :stack_trace nil
-             :thread_name "test"}
-            {:foo "bar"
-             :level "ERROR"
-             :level_value 40000
-             :logger_name "mokujin.log-test"
-             :message "oh no again"
-             :stack_trace nil
-             :thread_name "test"}
-            {:fail "true"
-             :foo "bar"
-             :level "ERROR"
-             :level_value 40000
-             :logger_name "mokujin.log-test"
-             :message "oh no again again"
-             :stack_trace {:count 4 :message "clojure.lang.ExceptionInfo: this is exception"}
-             :thread_name "test"}]
-           captured-logs))))
+                     (log/warn {:foo "bar"} "two"))
+                   (log/error "three")
+                   (log/with-context {:nested "again"}
+                     (log/with-context {:foo "bar"}
+                       (log/infof "four %s" "formatted")
+                       (log/error "five"))
+                     (log/with-context {:foo :bar}
+                       (try
+                         (throw (ex-info "this is exception" {}))
+                         (catch Exception e
+                           (log/error {:fail true} e "six")))))
+                   (log/info "seven")))
+  (let [captured-logs (map #(dissoc % :logger_name :thread_name)
+                           (parse-captured-logs))]
+    (testing "All messages are captured"
+      (is (= ["one" "two" "three" "four formatted" "five" "six" "seven"]
+             (map :message captured-logs))))
+
+    (testing "MDC states"
+      (is (= [{}
+              {:nested "true" :foo "bar"}
+              {}
+              {:nested "again" :foo "bar"}
+              {:nested "again" :foo "bar"}
+              {:fail "true" :nested "again" :foo "bar"}
+              {}]
+             (map #(dissoc % :message :level :stack_trace)
+                  captured-logs))))
+    (testing "stack trace is included"
+      (is (= [{:fail "true"
+               :nested "again"
+               :foo "bar"
+               :level "ERROR"
+               :message "six"
+               :stack_trace {:count 5
+                             :message "clojure.lang.ExceptionInfo: this is exception"}}]
+             (filter :stack_trace captured-logs))))))
 
 (deftest verify-nested-mdc
   (count (pmap (fn [f] (f))
@@ -188,14 +182,12 @@
 
   (let [captured-logs (parse-captured-logs)]
     (is (= [{:level "INFO"
-             :level_value 20000
              :logger_name "mokujin.log-test"
              :message "foo"
              :stack_trace nil
              :thread_name "test-1"}
 
             {:level "INFO"
-             :level_value 20000
              :logger_name "mokujin.log-test"
              :message "bar"
              :nested "true"
@@ -203,7 +195,6 @@
              :thread_name "test-1"}
             {:foo "bar"
              :level "WARN"
-             :level_value 30000
              :logger_name "mokujin.log-test"
              :message "qux"
              :nested "for real"
@@ -213,7 +204,6 @@
 
     (is (= [{:foo "bar2"
              :level "ERROR"
-             :level_value 40000
              :logger_name "mokujin.log-test"
              :message "oh no"
              :stack_trace nil
@@ -221,7 +211,6 @@
             {:fail "true"
              :foo "bar2"
              :level "ERROR"
-             :level_value 40000
              :logger_name "mokujin.log-test"
              :message "oh no again again"
              :stack_trace {:count 4 :message "java.lang.AssertionError: Assert failed: false"}
