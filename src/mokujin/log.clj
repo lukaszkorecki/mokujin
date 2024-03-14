@@ -1,46 +1,38 @@
 (ns mokujin.log
   (:require
-   [clojure.tools.logging :as log]
-   [clojure.tools.logging.impl :as log-impl])
+   [clojure.tools.logging :as log])
   (:import
    (org.slf4j MDC)))
 
-(defn not-blank? [v] (and v (not (.isBlank ^String v))))
+(defn ->str
+  [val] ^String
+  (if val
+    (if (keyword? val)
+      (.replaceAll ^String (.getName ^clojure.lang.Keyword val) "-" "_")
+      (.toString ^Object val))
+    ""))
 
-(defn valid-key? [key]
-  (let [nk (name key)]
-    (when (not-blank? nk)
-      nk)))
-
-(def format-key
-  (memoize (fn
-             [key]
-             (when-let [nk (valid-key? key)]
-               (.replaceAll ^String nk "-" "_")))))
-
-(defn- add! [[k v]]
-  (when-let [k (and (not-blank? (str v)) (valid-key? k))]
-    (MDC/put (format-key k) (str v))))
+(defn format-context [ctx]
+  (persistent!
+   (reduce-kv (fn [m k v]
+                (assoc! m (->str k) (->str v)))
+              (transient {})
+              ctx)))
 
 (defn mdc-put [ctx]
-  (doall (map add! ctx)))
-
-(defn- remove! [[k _v]]
-  (MDC/remove (format-key k)))
-
-(defn mdc-remove [ctx]
-  (doall (map remove! ctx)))
+  (doseq [[k v] (format-context ctx)]
+    (MDC/put ^String k ^String v)))
 
 (defmacro with-context
   "Set  context map for the form. The context map should use unqualified keywords or strings for keys.
   Values will be stringified."
   [ctx & body]
-  `(do
+  `(let [og# (MDC/getCopyOfContextMap)]
      (mdc-put ~ctx)
      (try
        (do ~@body)
        (finally
-         (mdc-remove ~ctx)))))
+         (MDC/setContextMap og#)))))
 
 (defn current-context
   "Returns the current context map, useful if you want to pass it to another process to continue logging with the same context.
@@ -48,11 +40,6 @@
   the current thread and map keys will be strings, not keywords."
   []
   (into {} (MDC/getCopyOfContextMap)))
-
-
-;; IDEA: allow users to define transformation this doesn't have to be handled here
-(defn ^:redef transform-ctx [ctx] ctx #_(walk/stringify-keys ctx))
-
 
 (defmacro info
   "Log an info pass message or ctx+messag"
@@ -78,6 +65,7 @@
         (log/log :warn ~msg))
      (meta &form))))
 
+#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defmacro debug
   "Debug log, pass message or ctx+message"
   ([msg]
@@ -134,22 +122,24 @@
     (meta &form)))
 
 (defn timing
-  "Returns a map of:
-  - start-time-ms
-  - get-run-time-ms - returns the time in ms since start-time-ms
+  "When invoked captures current timestamp in ms, and returns a function
+  that when invoked returns the time in ms since the original invocation.
 
-  This is useful if you want to instrument a function and return the time it took to run it and inject that into
-  the MDC.
+  This is useful if you want to instrument a function and return the time
+  it took to run it and inject that into the MDC yourself.
 
   Example:
-  (log/with-context {:operation \"do-something\"}
-  (let [{:keys [_start-time-ms get-run-time-ms]} (timing)
-        result (do-something)]
-    (log/info {:run-time-ms (get-run-time-ms)}
-      \"do-something completed\")
-    result"
 
-  []
-  (let [start-time-ms ^long (System/currentTimeMillis)]
-    {:start-time-ms start-time-ms
-     :get-run-time-ms (fn get-run-time-ms' [] (- (System/currentTimeMillis) ^long start-time-ms))}))
+  ```clojure
+  (log/with-context {:operation \"do-something\"}
+    (let [get-run-time-ms (timing)
+          result (do-something)]
+      (log/info {:run-time-ms (get-run-time-ms)} \"do-something completed\")
+      result))
+  ```
+  "
+
+  [] ^long
+  (let [start-time-ms (System/currentTimeMillis)]
+    (fn ^{:start-time-ms start-time-ms} get-run-time-ms' []
+      (- (System/currentTimeMillis) ^long start-time-ms))))
