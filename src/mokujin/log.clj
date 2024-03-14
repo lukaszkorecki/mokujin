@@ -120,7 +120,7 @@
     `(log/logf :debug ~@args)
     (meta &form)))
 
-(defn timing
+(defn timer
   "When invoked captures current timestamp in ms, and returns a function
   that when invoked returns the time in ms since the original invocation.
 
@@ -131,7 +131,7 @@
 
   ```clojure
   (log/with-context {:operation \"do-something\"}
-    (let [get-run-time-ms (timing)
+    (let [get-run-time-ms (log/timer)
           result (do-something)]
       (log/info {:run-time-ms (get-run-time-ms)} \"do-something completed\")
       result))

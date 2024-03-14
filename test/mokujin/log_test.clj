@@ -217,7 +217,7 @@
              :thread_name "test-2"}]
            (filter #(= (:thread_name %) "test-2") captured-logs)))))
 
-(deftest timing-test
-  (let [get-run-time (log/timing)]
+(deftest timer-test
+  (let [get-run-time (log/timer)]
     (Thread/sleep 100)
     (is (>= (get-run-time) 100))))
