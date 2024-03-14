@@ -65,7 +65,6 @@
         (log/log :warn ~msg))
      (meta &form))))
 
-#_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defmacro debug
   "Debug log, pass message or ctx+message"
   ([msg]

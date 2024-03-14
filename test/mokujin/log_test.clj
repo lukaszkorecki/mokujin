@@ -35,15 +35,15 @@
      (.join t))))
 
 (deftest merging-mdc-test
-  (is (= {} (MDC/getCopyOfContextMap)))
+  (is (= {} (log/current-context)))
   (log/with-context {"one" "two" :three :four}
-    (is (= {"one" "two" "three" "four"} (MDC/getCopyOfContextMap)))
+    (is (= {"one" "two" "three" "four"} (log/current-context)))
 
     (log/with-context {"five" :six}
-      (is (= {"one" "two" "three" "four" "five" "six"} (MDC/getCopyOfContextMap))))
+      (is (= {"one" "two" "three" "four" "five" "six"} (log/current-context))))
 
-    (is (= {"one" "two" "three" "four"} (MDC/getCopyOfContextMap))))
-  (is (= {} (MDC/getCopyOfContextMap))))
+    (is (= {"one" "two" "three" "four"} (log/current-context))))
+  (is (= {} (log/current-context))))
 
 (deftest mdc-doesnt-spill-over-when-using-with-context
   (testing "init state"
@@ -119,7 +119,7 @@
     (is (= {"aha" ""
             "foo" ""
             "hello" "there"}
-           (into {} (MDC/getCopyOfContextMap))))))
+           (log/current-context)))))
 
 (deftest structured-log-test
   (run-in-thread (fn structured' []
@@ -216,3 +216,8 @@
              :stack_trace {:count 4 :message "java.lang.AssertionError: Assert failed: false"}
              :thread_name "test-2"}]
            (filter #(= (:thread_name %) "test-2") captured-logs)))))
+
+(deftest timing-test
+  (let [get-run-time (log/timing)]
+    (Thread/sleep 100)
+    (is (>= (get-run-time) 100))))
