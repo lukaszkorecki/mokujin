@@ -1,16 +1,19 @@
 {:paths ["src"]
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}
-        org.clojure/tools.logging {:mvn/version "1.2.4"}
-        org.slf4j/slf4j-api {:mvn/version "2.0.11"}}
+ :deps {org.clojure/clojure {:mvn/version "1.11.2"}
+        org.clojure/tools.logging {:mvn/version "1.3.0"}
+        org.slf4j/slf4j-api {:mvn/version "2.0.12"}}
 
  :aliases {:dev {:extra-paths ["dev-resources"]
                  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
                             "-Duser.timezone=UTC"
                             "-Dfile.encoding=UTF-8"]
-                 :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.11"}
-                              ch.qos.logback/logback-classic {:mvn/version "1.4.14"
+                 :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.12"}
+                              ch.qos.logback/logback-classic {:mvn/version "1.5.3"
                                                               :exclusions [org.slf4j/slf4j-api]}
                               net.logstash.logback/logstash-logback-encoder {:mvn/version "7.4"}}}
+           :dev/repl {:main-opts ["-m" "clojure.main"]
+                      :extra-paths ["dev-resources"]
+                      :extra-deps {nrepl/nrepl {:mvn/version "1.1.1"}}}
 
            :test {:main-opts ["-m" "kaocha.runner"]
                   :extra-paths ["dev-resources" "test"]
@@ -23,8 +26,9 @@
                                   "-Duser.timezone=UTC"
                                   "-Dfile.encoding=UTF-8"]
                        :paths ["src" "bench"]
-                       :extra-deps {criterium/criterium {:mvn/version "0.4.6"}}}
+                       :extra-deps {criterium/criterium {:mvn/version "0.4.6"}
+                                    org.slf4j/slf4j-nop {:mvn/version "2.0.12"}}}
 
-           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.9.6"}
+           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.0"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
                    :ns-default build}}}
