@@ -1,46 +1,61 @@
 (ns mokujin.log
   (:require
    [clojure.tools.logging :as log]
-   [clojure.tools.logging.impl :as log-impl])
+   [clojure.tools.logging.impl]
+   [clojure.walk :refer [stringify-keys]])
   (:import
-   (org.slf4j MDC)))
+   [java.util HashMap Map]
+   [org.slf4j MDC]))
 
-(defn not-blank? [v] (and v (not (.isBlank ^String v))))
+(defn timing
+  "Returns a map of:
+  - start-time-ms
+  - get-run-time-ms - returns the time in ms since start-time-ms
 
-(defn valid-key? [key]
-  (let [nk (name key)]
-    (when (not-blank? nk)
-      nk)))
+  This is useful if you want to instrument a function and return the time it took to run it and inject that into
+  the MDC.
 
-(def format-key
-  (memoize (fn
-             [key]
-             (when-let [nk (valid-key? key)]
-               (.replaceAll ^String nk "-" "_")))))
+  Example:
+  ```clojure
+  (log/with-context {:op \"slow-request\"}
+    (let [{:keys [get-run-time-ms]} (log/timing)
+          result (slow-request)]
+      (log/info {:run-time-ms (get-run-time-ms) :result result} \"slow request done\")
+      result))
+  ```
+"
+  []
+  (let [start-time-ts ^long (System/currentTimeMillis)]
+    {:start-time-ts start-time-ts
+     :get-run-time-ms (fn get-run-time-ms' [] (- (System/currentTimeMillis) ^long start-time-ts))}))
 
-(defn- add! [[k v]]
-  (when-let [k (and (not-blank? (str v)) (valid-key? k))]
-    (MDC/put (format-key k) (str v))))
+(defn format-value
+  "Stringify the value, with special handling for keywords"
+  ^String
+  [v]
+  (if (keyword? v)
+    (name v)
+    (str v)))
 
-(defn mdc-put [ctx]
-  (doall (map add! ctx)))
+(defn format-key ^String [key]
+  (.replaceAll ^String key "-" "_"))
 
-(defn- remove! [[k _v]]
-  (MDC/remove (format-key k)))
-
-(defn mdc-remove [ctx]
-  (doall (map remove! ctx)))
+(defn merge-mdc ^Map [^Map m1 ^Map m2]
+  (let [result ^HashMap (HashMap. ^Map (or m1 {}))]
+    (.putAll result ^Map (-> m2 stringify-keys (update-keys format-key) (update-vals format-value)))
+    result))
 
 (defmacro with-context
   "Set  context map for the form. The context map should use unqualified keywords or strings for keys.
   Values will be stringified."
   [ctx & body]
-  `(do
-     (mdc-put ~ctx)
+  `(let [current-mdc# (MDC/getCopyOfContextMap)]
      (try
-       (do ~@body)
+       (MDC/setContextMap (merge-mdc current-mdc# ~ctx))
+       (do
+         ~@body)
        (finally
-         (mdc-remove ~ctx)))))
+         (MDC/setContextMap current-mdc#)))))
 
 (defn current-context
   "Returns the current context map, useful if you want to pass it to another process to continue logging with the same context.
@@ -49,10 +64,8 @@
   []
   (into {} (MDC/getCopyOfContextMap)))
 
-
 ;; IDEA: allow users to define transformation this doesn't have to be handled here
 (defn ^:redef transform-ctx [ctx] ctx #_(walk/stringify-keys ctx))
-
 
 (defmacro info
   "Log an info pass message or ctx+messag"
@@ -132,24 +145,3 @@
   (with-meta
     `(log/logf :debug ~@args)
     (meta &form)))
-
-(defn timing
-  "Returns a map of:
-  - start-time-ms
-  - get-run-time-ms - returns the time in ms since start-time-ms
-
-  This is useful if you want to instrument a function and return the time it took to run it and inject that into
-  the MDC.
-
-  Example:
-  (log/with-context {:operation \"do-something\"}
-  (let [{:keys [_start-time-ms get-run-time-ms]} (timing)
-        result (do-something)]
-    (log/info {:run-time-ms (get-run-time-ms)}
-      \"do-something completed\")
-    result"
-
-  []
-  (let [start-time-ms ^long (System/currentTimeMillis)]
-    {:start-time-ms start-time-ms
-     :get-run-time-ms (fn get-run-time-ms' [] (- (System/currentTimeMillis) ^long start-time-ms))}))
