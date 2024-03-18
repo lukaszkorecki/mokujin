@@ -293,8 +293,9 @@ Development/test config, stored in `dev-resources/logback-test.xml`:
 
 </details>
 
-## <a name="roadmap">TODO</a>
+## TODO
 
 - [x] Maven release?
-- [ ] Finalize `log/error` API - it works, but there are cases where its usage can be confusing
 - [x] Improve performance of adding/removing keys from the MDC - see Cambium's or Aviso-logging source for a good approach
+- [ ] Finalize `log/error` API - it works, but there are cases where its usage can be confusing
+- [ ] Provide a way to customize how context data is transformed
