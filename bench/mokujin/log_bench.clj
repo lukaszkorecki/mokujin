@@ -5,7 +5,7 @@
 
 (set! *warn-on-reflection* true)
 
-(defn mokujin-log-all []
+(defn mokujin-log+context []
   (log/info {:some "context"} "hello")
   (log/info "no context")
   (log/with-context {"some" "ctx"}
@@ -16,7 +16,16 @@
     (log/error {:error "yes"} (ex-info "oh no" {:exc :data}) "oh no"))
   true)
 
-(defn tools-logging-log-all []
+(defn mokujin-log []
+  (log/infof "hello %s=%s" :some "context")
+  (log/info "no contgext")
+  (log/warnf "hello %s=%s %s=%s" :some "context" :nested "true")
+  (log/infof "nested %s=%s" :some "context")
+  (log/errorf (ex-info "oh no" {:exc :data}) "oh no %s=%s" :error "yes")
+  true)
+
+
+(defn tools-logging-log []
   (logging/infof "hello %s=%s" :some "context")
   (logging/info "no contgext")
   (logging/warnf "hello %s=%s %s=%s" :some "context" :nested "true")
@@ -24,7 +33,7 @@
   (logging/errorf (ex-info "oh no" {:exc :data}) "oh no %s=%s" :error "yes")
   true)
 
-(defn tools-logging+context []
+(defn tools-logging-log+context []
   (log/with-context {:some "ctx"}
     (logging/infof "hello %s=%s" :some "context")
     (logging/info "no contgext")
@@ -35,6 +44,6 @@
   true)
 
 (defn -main []
-  (doseq [f [#'mokujin-log-all #'tools-logging-log-all #'tools-logging+context]]
+  (doseq [f [#'mokujin-log #'mokujin-log+context #'tools-logging-log #'tools-logging-log+context]]
     (let [result (criterium/quick-benchmark* f {})]
       (criterium/report-point-estimate (str f) (:mean result)))))
