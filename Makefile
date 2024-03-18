@@ -2,6 +2,8 @@
 
 
 test-all: test test-logback test-log4j2
+	@echo "all done"
+
 test:
 	clj -M:dev:test
 

@@ -1,15 +1,14 @@
 {:paths ["." "resources"]
  :deps {mokujin/mokujin {:local/root "../../"}
 
-        org.apache.logging.log4j/log4j-1.2-api {:mvn/version "2.22.1"}
-        org.apache.logging.log4j/log4j-api {:mvn/version "2.22.1"}
-        org.apache.logging.log4j/log4j-core {:mvn/version "2.22.1"}
-        org.apache.logging.log4j/log4j-jcl {:mvn/version "2.22.1"}
-        org.apache.logging.log4j/log4j-jul {:mvn/version "2.22.1"}
+        org.apache.logging.log4j/log4j-1.2-api {:mvn/version "2.23.1"}
+        org.apache.logging.log4j/log4j-api {:mvn/version "2.23.1"}
+        org.apache.logging.log4j/log4j-core {:mvn/version "2.23.1"}
+        org.apache.logging.log4j/log4j-jcl {:mvn/version "2.23.1"}
+        org.apache.logging.log4j/log4j-jul {:mvn/version "2.23.1"}
         org.apache.logging.log4j/log4j-slf4j2-impl
-        {:mvn/version "2.22.1"}}
+        {:mvn/version "2.23.1"}}
 
  :aliases {:run {:main-opts ["-m" "core"]}
            :stable {:extra-deps
-                    {io.github.lukaszkorecki/mokujin {:git/sha "2514bb6e1be1c35cc1daa7372ca848b3241d640a"
-                                                      :git/url "git@github.com:lukaszkorecki/mokujin.git"}}}}}
+                    {org.clojars.lukaszkorecki/mokujin {:mvn/version "1.0.0.39"}}}}}
