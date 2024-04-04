@@ -4,27 +4,34 @@
   (:import
    (org.slf4j MDC)))
 
-(defn ->str
+(defn- ->str
   [val] ^String
   (if val
     (if (keyword? val)
-      (.replaceAll ^String (.getName ^clojure.lang.Keyword val) "-" "_")
+      ;; all of these are quite slow
+      #_(.replaceAll ^String (.getName ^clojure.lang.Keyword val) "-" "_")
+      #_ (.replaceAll ^String (str (symbol val)) "-" "_")
+      #_ (.getName ^clojure.lang.Keyword val)
+      ;; fastest way to get a fully-quallified keyword as a string
+      (str (symbol val))
       (.toString ^Object val))
     ""))
 
-(defn format-context [ctx]
+(defn- format-context [ctx]
   (persistent!
    (reduce-kv (fn [m k v]
                 (assoc! m (->str k) (->str v)))
               (transient {})
               ctx)))
 
-(defn mdc-put [ctx]
+(defn mdc-put
+  "Take a context map and put it into the MDC. Keys and values will be stringified."
+  [ctx]
   (doseq [[k v] (format-context ctx)]
     (MDC/put ^String k ^String v)))
 
 (defmacro with-context
-  "Set  context map for the form. The context map should use unqualified keywords or strings for keys.
+  "Set  context map for the form. Ideally, the context map should use unqualified keywords or strings for keys.
   Values will be stringified."
   [ctx & body]
   `(let [og# (MDC/getCopyOfContextMap)]
@@ -134,6 +141,8 @@
     (let [get-run-time-ms (log/timer)
           result (do-something)]
       (log/info {:run-time-ms (get-run-time-ms)} \"do-something completed\")
+      (some-other-expensive-operation)
+      (log/info {:run-time-ms (get-run-time-ms)} \"some-other-expensive-operation completed\")
       result))
   ```
   "

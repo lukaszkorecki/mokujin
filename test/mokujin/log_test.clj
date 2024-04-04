@@ -3,7 +3,7 @@
    [cheshire.core :as json]
    kaocha.plugin.capture-output
    [clojure.string :as str]
-   [clojure.test :refer [deftest is testing use-fixtures]]
+   [clojure.test :refer [deftest is testing]]
    [mokujin.log :as log])
   (:import
    (org.slf4j MDC)))
@@ -98,9 +98,9 @@
   (let [captured-logs (parse-captured-logs)]
     (testing "contexts can be nested, but only work within current thread"
       (is (= [{:level "INFO"
-               :level_one "yes"
-               :level_three "yes"
-               :level_two "yes"
+               :level-one "yes"
+               :level-three "yes"
+               :level-two "yes"
                :logger_name "mokujin.log-test"
                :message "ahem"
                :stack_trace nil
@@ -108,10 +108,15 @@
              captured-logs)))))
 
 (deftest mdc+qualified-keywords
-  (log/with-context {:foo-bar "baz" :qualified.keyword/test "bar"}
+  (log/with-context {"one" "two"
+                     :foo-bar "baz"
+                     :qualified.keyword.is-here/test "bar"}
     (log/info "ahem")
-    (is (= "baz" (MDC/get "foo_bar")))
-    (is (= "bar" (MDC/get "test")))))
+
+    (is (= {"foo-bar" "baz"
+            "one" "two"
+            "qualified.keyword.is-here/test" "bar"}
+           (log/current-context)))))
 
 (deftest works-with-tags-with-no-value
   (log/with-context {:foo nil :aha "" :hello "there"}
@@ -164,21 +169,22 @@
              (filter :stack_trace captured-logs))))))
 
 (deftest verify-nested-mdc
-  (count (pmap (fn [f] (f))
-               [#(run-in-thread "test-1" (fn []
-                                           (log/info "foo")
-                                           (log/with-context {:nested true}
-                                             (log/info "bar")
-                                             (log/with-context {:nested "for real"}
-                                               (log/warn {:foo "bar"} "qux")))))
+  ;; just so we have some more threads-in-threads
+  (is (= 2 (count (pmap (fn [f] (f))
+                        [#(run-in-thread "test-1" (fn []
+                                                    (log/info "foo")
+                                                    (log/with-context {:nested true}
+                                                      (log/info "bar")
+                                                      (log/with-context {:nested "for real"}
+                                                        (log/warn {:foo "bar"} "qux")))))
 
-                #(run-in-thread "test-2" (fn []
-                                           (log/with-context {:foo "bar2"}
-                                             (log/error "oh no")
-                                             (try
-                                               (assert false)
-                                               (catch AssertionError e
-                                                 (log/error {:fail true} e "oh no again again"))))))]))
+                         #(run-in-thread "test-2" (fn []
+                                                    (log/with-context {:foo "bar2"}
+                                                      (log/error "oh no")
+                                                      (try
+                                                        (assert false)
+                                                        (catch AssertionError e
+                                                          (log/error {:fail true} e "oh no again again"))))))]))))
 
   (let [captured-logs (parse-captured-logs)]
     (is (= [{:level "INFO"
