@@ -19,22 +19,22 @@
 
 ### Rationalle
 
-`clojure.tools.logging` is Good Enough :tm: solution for majority (if not all) your logging needs. It's fast, works with any 
+`clojure.tools.logging` is Good Enough :tm: solution for majority (if not all) your logging needs. It's fast, works with any
 logging backend supported on the JVM and is incredibly simple to use.
 
-The only area where it falls short is producing structured logs. 
+The only area where it falls short is producing structured logs.
 
-In the past I'd use [`logfmt`-like](https://brandur.org/logfmt) formatting style when using `infof` (and friends) to produce logs. 
-Then I'd configure the log ingester to parse log lines using this format. That's fine for simple cases, but as soon as 
-exceptions (and stack traces) got thrown into the mix, I fell into the deep rabbit hole ofmulti-line log 
+In the past I'd use [`logfmt`-like](https://brandur.org/logfmt) formatting style when using `infof` (and friends) to produce logs.
+Then I'd configure the log ingester to parse log lines using this format. That's fine for simple cases, but as soon as
+exceptions (and stack traces) got thrown into the mix, I fell into the deep rabbit hole ofmulti-line log
 parsers in Fluentd and vector.dev.
 
 There's a way out of this though - [Mapped Diagnostic Context (MDC)](https://logback.qos.ch/manual/mdc.html) - as
-way of adding **structured** information to your logs. This way you get both structured data that can be used to 
+way of adding **structured** information to your logs. This way you get both structured data that can be used to
 dervive metrics, alerts etc in your log collector and human readable logs for debugging pruposes.
 
-Mokujin emerged after years of working with different logging solutions in Clojure (and other languages), log aggregation 
-systems and monitoring platforms. It strikes a balance between familiar API, and leveraging existing 
+Mokujin emerged after years of working with different logging solutions in Clojure (and other languages), log aggregation
+systems and monitoring platforms. It strikes a balance between familiar API, and leveraging existing
 JVM logging ecosystem and all of its good (and less good) parts.
 
 ### How does it work?
@@ -50,17 +50,17 @@ Keep in mind that `infof` (and friends) variants are present, but do not support
 
 While effort was made to keep things as efficient as possible, there is some impact
 introduced by manipulating the MDC object. Typical "raw" call to `clojure.tools.logging/info` is measured in nano-seconds.
-Same call to `mokujin.log/info` will have nearly the same performance characteristics. Only when introducing several levels of MDC 
-processing you can expect a small slow down but still maintain sub-microsecond performance. This is absolutely fine for 
+Same call to `mokujin.log/info` will have nearly the same performance characteristics. Only when introducing several levels of MDC
+processing you can expect a small slow down but still maintain sub-microsecond performance. This is absolutely fine for
 your typical usage - most of applications running out there do a lot of I/O, where processing times are measured in milliseconds
 or seconds event, so any overhead introduced by logging is negligble.
 
 You can run the benchmark via `clj -M:benchmark`. Latest results (as of March 18th 2024):
 
 ```
-#'mokujin.log-bench/mokujin-log : 121.436908 ns       
-#'mokujin.log-bench/mokujin-log+context : 886.954250 ns 
-#'mokujin.log-bench/tools-logging-log : 132.977819 ns 
+#'mokujin.log-bench/mokujin-log : 121.436908 ns
+#'mokujin.log-bench/mokujin-log+context : 886.954250 ns
+#'mokujin.log-bench/tools-logging-log : 132.977819 ns
 #'mokujin.log-bench/tools-logging-log+context : 538.664454 ns
 ```
 
@@ -97,7 +97,7 @@ You are (probably) be better off doing something like this, and structure your l
   (log/with-context {:flow "signup" :email (:email (:body req))}
     (let [user (create-user req)]
       (if (:id user)
-        (log/info {:id (:id user)} "success")
+        (log/info "success" {:id (:id user)})
         (log/error "failed")))))
 
 (do-sign-up {:body  {:email "test@example.com"}})
@@ -144,7 +144,7 @@ Getting started section - Logback and log4j2 examples are provided.
 The API is close enough that Mokujin is *almost* a drop-in replacement for `c.t.logging`, **however** to force good practices,
 logging functions that support format strings e.g. `log/infof` or `log/errorf` **do not suport the context map**.
 
-That's because in 99% of the cases where I'd use `log/infof` what I wanted to do was `(log/info context "message")` instead.
+That's because in 99% of the cases where I'd use `log/infof` what I wanted to do was `(log/info "message" context)` instead.
 In cases where you really really want to use formatted strings and the context, this Works Just Fine :tm: :
 
 ```clojure
@@ -154,9 +154,10 @@ In cases where you really really want to use formatted strings and the context, 
 
 ### The context
 
-The context is a `Map[String]String` internally. To make it easier to work with standard log ingestion infrastructure, 
+The context is a `Map[String]String` internally. To make it easier to work with standard log ingestion infrastructure,
 all keywords present in the keys and values are converted to `"snake_case"` strings. Other value types are stringified.
 This frees you up from figuring out what can and cannot be serialized by the appender that your logging backend is using.
+If you need to change the layout of the produced log line, you can and should defer it to the appender configuration instead.
 
 > [!WARNING]
 > Nested maps or other "rich" data types are not allowed - this is something that might change in the future.
@@ -166,10 +167,10 @@ This frees you up from figuring out what can and cannot be serialized by the app
 #### Logging statements
 
 ```clojure
-(log/info [msg] [ctx msg])
-(log/warn [msg] [ctx msg])
-(log/debug [msg] [ctx msg])
-(log/error [msg] [exc msg] [ctx exc msg])
+(log/info [msg] [msg ctx])
+(log/warn [msg] [msg ctx])
+(log/debug [msg] [msg ctx])
+(log/error [msg] [exc msg] [exc msg ctx])
 (log/infof [fmt & fmt-args])
 (log/warnf [fmt & fmt-args])
 (log/debugf [fmt & fmt-args])
@@ -177,14 +178,15 @@ This frees you up from figuring out what can and cannot be serialized by the app
 (log/with-context [ctx & body])
 ```
 
+Mokujin preserves caller context, and ensures that the right information (namespace, line numbers) is injected into the log statement, under the `logger` field.
+
 > [!WARNING]
-> `log/error` doesn't support the context/MDC argument for 1- and 2-arity variants, again - you're better off wrapping the form in `log/with-context` (see below) and using that as extra info
+> `log/error` doesn't support the context/MDC argument for 1- and 2-arity variants, again - you're better off wrapping the form in `log/with-context` (see below) and using that as extra information attached to all logs
 > carried over with the exception - that's how I enrich exceptions tracked by Sentry's LogBack appender.
 > Additionally, figuring out the types of passed in arguments gets complicated as we'd have to distinguish between the context map, exception, message string and rest of the args
 > and that introduces overhead that we don't want.
-> This is the only area of Mokujin's user-facing API that *might* change.
+> This is the only area of Mokujin's user-facing API that *might* change, maybe.
 
-Mokujin preserves caller context, and ensures that the right information is injected into the log statement, under the `logger` field.
 
 #### Context macro
 
@@ -208,6 +210,8 @@ Example:
           (log/info "success")
           (log/error "problem with notification processing"))))))
 ```
+
+As expected, context are merged - including nested `with-context` forms and contexts added to individual logging statements.
 
 # Getting started
 
@@ -235,9 +239,9 @@ and creating a configuration file, stored in the class path (usually `resources/
 
 <details>
   <summary>
-<strong>Sample Logback configuration</strong>
+    <strong>Sample Logback configuration</strong>
   </summary>
-  
+
 Here's my Logback configuration that I use in all production projects, with logs shipped to something that understands JSON/structured logging (Loki, Better Stack's Logs etc)
 Production config, stored in `resources/logback.xml`:
 
@@ -297,5 +301,5 @@ Development/test config, stored in `dev-resources/logback-test.xml`:
 
 - [x] Maven release?
 - [x] Improve performance of adding/removing keys from the MDC - see Cambium's or Aviso-logging source for a good approach
-- [ ] Finalize `log/error` API - it works, but there are cases where its usage can be confusing
+- [x] Finalize `log/error` API - it works, but there are cases where its usage can be confusing
 - [ ] Provide a way to customize how context data is transformed

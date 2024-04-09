@@ -54,7 +54,7 @@
    (with-meta
      `(log/log :info ~msg)
      (meta &form)))
-  ([ctx msg]
+  ([msg ctx]
    (with-meta
      `(with-context ~ctx
         (log/log :info ~msg))
@@ -66,7 +66,7 @@
    (with-meta
      `(log/log :warn ~msg)
      (meta &form)))
-  ([ctx msg]
+  ([msg ctx]
    (with-meta
      `(with-context ~ctx
         (log/log :warn ~msg))
@@ -78,7 +78,7 @@
    (with-meta
      `(log/log :debug ~msg)
      (meta &form)))
-  ([ctx msg]
+  ([msg ctx]
    (with-meta
      `(with-context ~ctx
         (log/log :debug ~msg))
@@ -99,9 +99,9 @@
    (with-meta
      `(log/log :error ~exc ~msg)
      (meta &form)))
-  ([ctx exc msg]
+  ([exc msg ctx]
    (with-meta
-     `(with-context ~ctx
+     `(with-context ~ctx #_ (merge ~ctx (ex-data ~exc)) ;; XXX: should we merge ex-data here?
         (log/log :error ~exc ~msg))
      (meta &form))))
 
