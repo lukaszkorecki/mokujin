@@ -8,7 +8,7 @@
                             "-Duser.timezone=UTC"
                             "-Dfile.encoding=UTF-8"]
                  :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.12"}
-                              ch.qos.logback/logback-classic {:mvn/version "1.5.3"
+                              ch.qos.logback/logback-classic {:mvn/version "1.5.4"
                                                               :exclusions [org.slf4j/slf4j-api]}
                               net.logstash.logback/logstash-logback-encoder {:mvn/version "7.4"}}}
            :dev/repl {:main-opts ["-m" "clojure.main"]
@@ -18,8 +18,8 @@
            :test {:main-opts ["-m" "kaocha.runner"]
                   :extra-paths ["dev-resources" "test"]
 
-                  :extra-deps {cheshire/cheshire {:mvn/version "5.12.0"}
-                               lambdaisland/kaocha {:mvn/version "1.87.1366"}}}
+                  :extra-deps {cheshire/cheshire {:mvn/version "5.13.0"}
+                               lambdaisland/kaocha {:mvn/version "1.88.1376"}}}
 
            :benchmark {:main-opts ["-m" "mokujin.log-bench"]
                        :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
