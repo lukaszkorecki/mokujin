@@ -55,13 +55,13 @@ processing you can expect a small slow down but still maintain sub-microsecond p
 your typical usage - most of applications running out there do a lot of I/O, where processing times are measured in milliseconds
 or seconds event, so any overhead introduced by logging is negligble.
 
-You can run the benchmark via `clj -M:benchmark`. Latest results (as of March 18th 2024):
+You can run the benchmark via `clj -M:benchmark`. Latest results (as of April 9th, 2024):
 
 ```
-#'mokujin.log-bench/mokujin-log : 121.436908 ns
-#'mokujin.log-bench/mokujin-log+context : 886.954250 ns
-#'mokujin.log-bench/tools-logging-log : 132.977819 ns
-#'mokujin.log-bench/tools-logging-log+context : 538.664454 ns
+#'mokujin.log-bench/mokujin-log : 121.528074 ns
+#'mokujin.log-bench/mokujin-log+context : 614.801815 ns
+#'mokujin.log-bench/tools-logging-log : 127.343391 ns
+#'mokujin.log-bench/tools-logging-log+context : 383.410334 ns
 ```
 
 > [!INFO]
