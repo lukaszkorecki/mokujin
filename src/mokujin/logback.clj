@@ -4,18 +4,12 @@
   of the Logback configuration, it just provides a way to configure it at runtime and optionally with EDN data.
   "
   (:require
-   [clojure.data.xml :as xml])
+   [mokujin.logback.config :as config])
   (:import
-   [ch.qos.logback.classic Logger LoggerContext Level]
+   [ch.qos.logback.classic Level Logger LoggerContext]
    [ch.qos.logback.classic.joran JoranConfigurator]
    [java.io ByteArrayInputStream InputStream]
    [org.slf4j LoggerFactory]))
-
-(defn config-data->xml-str [config]
-  (->> config
-       (xml/sexps-as-fragment)
-       ;; NOTE: we can use indent-str here to make it more readable as perf doesn't matter
-       (xml/indent-str)))
 
 (defn str->input-stream [^String s]
   (ByteArrayInputStream. (.getBytes s)))
@@ -39,31 +33,19 @@
   `xml-config-path` - path or resource to the logback configuration file, it will
                       override any loaded loback configuration found
                       in <classpath>/logback.xml or <classpath>/logback-test.xml
-  `config` - a map with logback configuration, as hiccup-style EDN data eg.
+  `config` - a map with logback configuration as XML string. Can be programatically created
+             by using `mokujin.logback.config/data->xml-str` or one of the preset functions:
+              - `mokujin.logback.config/json`
+              - `mokujin.logback.config/text`
 
-  ```clojure
-  [:configuration
-     [:statusListener {:class \"ch.qos.logback.core.status.NopStatusListener\"}]
-     [:appender {:name \"STDOUT\", :class \"ch.qos.logback.core.ConsoleAppender\"}
-       [:encoder
-         [:pattern \"%date [%thread] [%logger] [%level] %msg %mdc%n\"]]]
-     [:appender {:name \"STDOUT_JSON\", :class \"ch.qos.logback.core.ConsoleAppender\"}
-       [:encoder {:class \"net.logstash.logback.encoder.LogstashEncoder\"}
-         [:fieldNames
-           [:timestamp \"timestamp\"]
-           [:version \"[ignore]\"]
-           [:levelValue \"[ignore]\"]]]]
-     [:root {:level \"info\"}
-       [:appender-ref {:ref \"STDOUT_JSON\"}]]]
 
-  ```
   Note that it will not do any transformations to the configuration, so it needs to be in the correct format,
   internally `clojure.data.xml/sexps-as-fragment` is used to convert the hiccup-style EDN data to XML.
   "
   [{:keys [config]}]
   (cond
     ;; clj data -> xml
-    (vector? config) (with-open [conf ^java.io.Closeable (str->input-stream (config-data->xml-str config))]
+    (vector? config) (with-open [conf ^java.io.Closeable (str->input-stream (config/data->xml-str config))]
                        (initialize-and-configure! conf))
     ;; "raw" XML string
     (string? config) (with-open [conf ^java.io.Closeable (str->input-stream config)]
