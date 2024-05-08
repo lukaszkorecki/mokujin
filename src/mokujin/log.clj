@@ -10,8 +10,8 @@
     (if (keyword? val)
       ;; all of these are quite slow
       #_(.replaceAll ^String (.getName ^clojure.lang.Keyword val) "-" "_")
-      #_ (.replaceAll ^String (str (symbol val)) "-" "_")
-      #_ (.getName ^clojure.lang.Keyword val)
+      #_(.replaceAll ^String (str (symbol val)) "-" "_")
+      #_(.getName ^clojure.lang.Keyword val)
       ;; fastest way to get a fully-quallified keyword as a string
       (str (symbol val))
       (.toString ^Object val))
@@ -101,7 +101,7 @@
      (meta &form)))
   ([exc msg ctx]
    (with-meta
-     `(with-context ~ctx #_ (merge ~ctx (ex-data ~exc)) ;; XXX: should we merge ex-data here?
+     `(with-context ~ctx #_(merge ~ctx (ex-data ~exc)) ;; XXX: should we merge ex-data here?
         (log/log :error ~exc ~msg))
      (meta &form))))
 
@@ -125,6 +125,29 @@
 (defmacro debugf [& args]
   (with-meta
     `(log/logf :debug ~@args)
+    (meta &form)))
+
+;; Re-export generic log functions but with context support
+;; NOTE: these are SLOWER than dedicated log macros
+(defmacro log
+  ([level msg]
+   (with-meta
+     `(log/log ~level ~msg)
+     (meta &form)))
+  ([level msg context? & _rest]
+   (with-meta
+     `(cond
+        (and (string? ~msg)
+             (map? ~context?)) (with-context ~context?
+                                 (log/log ~level ~msg))
+
+        (and (string? ~msg)
+             (not (map? ~context?))) (log/log ~level ~msg))
+     (meta &form))))
+
+(defmacro logf [level msg & args]
+  (with-meta
+    `(log/logf ~level ~msg ~@args)
     (meta &form)))
 
 (defn timer

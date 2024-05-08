@@ -227,3 +227,35 @@
   (let [get-run-time (log/timer)]
     (Thread/sleep 100)
     (is (>= (get-run-time) 100))))
+
+(deftest generic-log-marco-test
+  (testing "`log` macro"
+    (log/log :info "one" {:ctx true})
+    (log/log :info "two" {:ctx true :more :true})
+    (log/with-context {:extra "extra"}
+      (log/log :warn "three" {:ctx true}))
+    (log/log :warn "four")
+
+    (let [logs (map #(dissoc % :logger_name :stack_trace :thread_name) (parse-captured-logs))]
+      (is (= [{:ctx "true" :level "INFO" :message "one"}
+              {:ctx "true" :level "INFO" :message "two" :more "true"}
+              {:ctx "true" :extra "extra" :level "WARN" :message "three"}
+              {:level "WARN" :message "four"}]
+             logs)))))
+
+(deftest generic-logf-macro-test
+  (testing "`logf` macro"
+    (log/logf :info "one %s" 1)
+    (log/logf :info "two %s %s" 1 2)
+    (log/with-context {:extra "extra"}
+      (log/logf :warn "three" {:ctx true})
+      (log/logf :warn "3.5 %s" {:uh "oh"}))
+    (log/logf :warn "four"))
+
+  (let [logs (map #(dissoc % :logger_name :stack_trace :thread_name) (parse-captured-logs))]
+    (is (= [{:level "INFO" :message "one 1"}
+            {:level "INFO" :message "two 1 2"}
+            {:level "WARN" :message "three" :extra "extra"}
+            {:level "WARN" :message "3.5 {:uh \"oh\"}" :extra "extra"}
+            {:level "WARN" :message "four"}]
+           logs))))
