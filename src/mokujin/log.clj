@@ -130,11 +130,12 @@
 ;; Re-export generic log functions but with context support
 ;; NOTE: these are SLOWER than dedicated log macros
 (defmacro log
+  "Log wrapper which is helpful if you need to programatically control the log level"
   ([level msg]
    (with-meta
      `(log/log ~level ~msg)
      (meta &form)))
-  ([level msg context? & _rest]
+  ([level msg context?]
    (with-meta
      `(cond
         (and (string? ~msg)
@@ -145,7 +146,9 @@
              (not (map? ~context?))) (log/log ~level ~msg))
      (meta &form))))
 
-(defmacro logf [level msg & args]
+(defmacro logf
+  "Log wrapper which is helpful if you need to programatically control the log level."
+  [level msg & args]
   (with-meta
     `(log/logf ~level ~msg ~@args)
     (meta &form)))
