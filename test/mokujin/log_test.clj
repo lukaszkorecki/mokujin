@@ -51,7 +51,7 @@
 
   (testing "with context"
     (log/with-context {:foo "bar"}
-      (log/info {:bar "baz"} "ahem")
+      (log/info "ahem" {:bar "baz"})
       (is (= "bar" (MDC/get "foo")))
 
       (is (= {"foo" "bar"} (log/current-context)))))
@@ -77,7 +77,7 @@
   (testing "init state"
     (is (nil? (MDC/get "foo"))))
   (try
-    (log/info {:foo "bar"} (format "%s" (throw (Exception. "foo"))))
+    (log/info (format "%s" (throw (Exception. "foo"))) {:foo "bar"})
     (catch Exception _err
       (is (= {} (log/current-context)))
       (testing "after catch"
@@ -93,7 +93,7 @@
      (fn nested' []
        (log/with-context {:level-one "yes"}
          (log/with-context {:level-two "yes"}
-           (log/info {:level-three "yes"} "ahem"))))))
+           (log/info "ahem" {:level-three "yes"}))))))
 
   (let [captured-logs (parse-captured-logs)]
     (testing "contexts can be nested, but only work within current thread"
@@ -130,7 +130,7 @@
   (run-in-thread (fn structured' []
                    (log/info "one")
                    (log/with-context {:nested true}
-                     (log/warn {:foo "bar"} "two"))
+                     (log/warn "two" {:foo "bar"}))
                    (log/error "three")
                    (log/with-context {:nested "again"}
                      (log/with-context {:foo "bar"}
@@ -140,7 +140,7 @@
                        (try
                          (throw (ex-info "this is exception" {}))
                          (catch Exception e
-                           (log/error {:fail true} e "six")))))
+                           (log/error e "six" {:fail true})))))
                    (log/info "seven")))
   (let [captured-logs (map #(dissoc % :logger_name :thread_name)
                            (parse-captured-logs))]
@@ -176,7 +176,7 @@
                                                     (log/with-context {:nested true}
                                                       (log/info "bar")
                                                       (log/with-context {:nested "for real"}
-                                                        (log/warn {:foo "bar"} "qux")))))
+                                                        (log/warn "qux" {:foo "bar"})))))
 
                          #(run-in-thread "test-2" (fn []
                                                     (log/with-context {:foo "bar2"}
@@ -184,7 +184,7 @@
                                                       (try
                                                         (assert false)
                                                         (catch AssertionError e
-                                                          (log/error {:fail true} e "oh no again again"))))))]))))
+                                                          (log/error e "oh no again again" {:fail true}))))))]))))
 
   (let [captured-logs (parse-captured-logs)]
     (is (= [{:level "INFO"
@@ -227,3 +227,35 @@
   (let [get-run-time (log/timer)]
     (Thread/sleep 100)
     (is (>= (get-run-time) 100))))
+
+(deftest generic-log-marco-test
+  (testing "`log` macro"
+    (log/log :info "one" {:ctx true})
+    (log/log :info "two" {:ctx true :more :true})
+    (log/with-context {:extra "extra"}
+      (log/log :warn "three" {:ctx true}))
+    (log/log :warn "four")
+
+    (let [logs (map #(dissoc % :logger_name :stack_trace :thread_name) (parse-captured-logs))]
+      (is (= [{:ctx "true" :level "INFO" :message "one"}
+              {:ctx "true" :level "INFO" :message "two" :more "true"}
+              {:ctx "true" :extra "extra" :level "WARN" :message "three"}
+              {:level "WARN" :message "four"}]
+             logs)))))
+
+(deftest generic-logf-macro-test
+  (testing "`logf` macro"
+    (log/logf :info "one %s" 1)
+    (log/logf :info "two %s %s" 1 2)
+    (log/with-context {:extra "extra"}
+      (log/logf :warn "three" {:ctx true})
+      (log/logf :warn "3.5 %s" {:uh "oh"}))
+    (log/logf :warn "four"))
+
+  (let [logs (map #(dissoc % :logger_name :stack_trace :thread_name) (parse-captured-logs))]
+    (is (= [{:level "INFO" :message "one 1"}
+            {:level "INFO" :message "two 1 2"}
+            {:level "WARN" :message "three" :extra "extra"}
+            {:level "WARN" :message "3.5 {:uh \"oh\"}" :extra "extra"}
+            {:level "WARN" :message "four"}]
+           logs))))

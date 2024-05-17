@@ -3,7 +3,7 @@
 
 (defn -main
   [& _args]
-  (log/info {:some "context"} "hello")
+  (log/info "hello" {:some "context"})
   (log/info "no context")
   (log/with-context {"some" "ctx"}
     (log/with-context {:nested "true"}
@@ -11,5 +11,5 @@
       (log/infof "hello %s" "world")
       (log/info "nested"))
 
-    (log/error {:error "yes"} (ex-info "oh no" {:exc :data}) "oh no"))
+    (log/error (ex-info "oh no" {:exc :data}) "oh no" {:error "yes"}))
   true)

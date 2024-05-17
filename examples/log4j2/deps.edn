@@ -11,4 +11,4 @@
 
  :aliases {:run {:main-opts ["-m" "core"]}
            :stable {:extra-deps
-                    {org.clojars.lukaszkorecki/mokujin {:mvn/version "1.0.0.39"}}}}}
+                    {org.clojars.lukaszkorecki/mokujin {:mvn/version "1.0.0.44"}}}}}

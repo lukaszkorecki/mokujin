@@ -3,3 +3,4 @@
 **/.cpcache/**
 **/.lsp/**
 target
+*.html
