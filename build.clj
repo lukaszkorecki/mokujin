@@ -38,6 +38,7 @@
   [{:keys [snapshot? lib] :as opts}]
   (let [lib-sym (get lib-name->sym lib)
         version (str version-base
+                     "."
                      (b/git-count-revs nil)
                      (when snapshot? "-SNAPSHOT"))
         pom (get pom-template lib)]
