@@ -1,5 +1,6 @@
 (ns core
-  (:require [mokujin.log :as log]))
+  (:require [mokujin.log :as log]
+            [mokujin.logback :as logback]))
 
 (defn -main
   [& _args]

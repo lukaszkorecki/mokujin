@@ -13,8 +13,8 @@
   Optionally takes a list of loggers to add to the configuration e.g
 
   ```clojure
-  [:logger {:name \"com.example\" :level \"debug\"}]
-  [:logger {:name \"org.eclipse.jetty\" :level \"warn\"}]
+  [:logger {:name "com.example" :level "debug"}]
+  [:logger {:name "org.eclipse.jetty" :level "warn"}]
   "
   [& loggers]
   (data->xml-str
@@ -69,8 +69,8 @@
   Optionally takes a list of loggers to add to the configuration e.g
 
   ```clojure
-  [:logger {:name \"com.example\" :level \"debug\"}]
-  [:logger {:name \"org.eclipse.jetty\" :level \"warn\"}]
+  [:logger {:name "com.example" :level "debug"}]
+  [:logger {:name "org.eclipse.jetty" :level "warn"}]
   ```
   "
 
@@ -86,4 +86,4 @@
      loggers
 
      [:root {:level "info"}
-      [:appender-ref {:ref "STDOUT"}]]]]))
+      [:appender-ref {:ref "STDOUT"}]]]))

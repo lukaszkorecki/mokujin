@@ -7,6 +7,7 @@
 
 
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin)
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin-logback.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin-logback)
 
 
 
@@ -135,7 +136,7 @@ Very simple middlewares for Ring, Hato and the background processing system ensu
 
 ## Logging backend support
 
-Technically, anything that supports SLF4j and  MDC should work with some configuration. See `examples` directory and
+Technically, anything that supports SLF4j and MDC should work with some configuration. See `examples` directory and
 Getting started section - Logback and log4j2 examples are provided.
 
 
@@ -221,13 +222,17 @@ To get started, add Mokujin to your `deps.edn` or `project.cj`
 
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin)
 
+For Logback support, you'll also need:
+
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin-logback.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin-logback)
 
 
 But wait, **you're not done yet**! You need to include a logging backend which suports MDC. For Logback, this would be:
 
 
 ```clojure
-{io.github.lukaszkorecki/mokujin {:mvn/version "...."}
+{org.clojars.lukaszkorecki/mokujin {:mvn/version "...."}
+ org.clojars.lukaszkorecki/mokujin-logback {:mvn/version "...."}
  org.slf4j/jcl-over-slf4j {:mvn/version "2.0.9"}
  ch.qos.logback/logback-classic {:mvn/version "1.4.11"
                                  :exclusions [org.slf4j/slf4j-api]}
@@ -297,9 +302,32 @@ Development/test config, stored in `dev-resources/logback-test.xml`:
 
 </details>
 
+## Logback Configuration from code
+
+You can also configure Logback from code using the `mokujin-logback` package. Here's an example:
+
+```clojure
+(require '[mokujin.logback :as logback])
+
+;; Create a JSON logging configuration
+(logback/configure! {:config (logback.config/json
+                               [:logger {:name "com.example" :level "debug"}]
+                               [:logger {:name "org.eclipse.jetty" :level "warn"}])})
+
+;; Or use plain text format
+(logback/configure! {:config (logback.config/text
+                               [:logger {:name "com.example" :level "debug"}]
+                               [:logger {:name "org.eclipse.jetty" :level "warn"}])})
+
+;; Change log levels at runtime
+(logback/set-level! :debug)  ;; Set root logger to debug level
+(logback/set-level! "com.example" :info)  ;; Set specific logger to info level
+```
+
 ## TODO
 
 - [x] Maven release?
 - [x] Improve performance of adding/removing keys from the MDC - see Cambium's or Aviso-logging source for a good approach
 - [x] Finalize `log/error` API - it works, but there are cases where its usage can be confusing
+- [x] Split library into core and logback-specific components
 - [ ] Provide a way to customize how context data is transformed

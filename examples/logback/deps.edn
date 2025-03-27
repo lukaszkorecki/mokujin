@@ -1,6 +1,7 @@
 {:paths ["." "resources"]
  :main-opts ["-m" "core"]
- :deps {mokujin/mokujin {:local/root "../../"}
+ :deps {org.clojars.lukaszkorecki/mokujin {:local/root "../../mokujin"}
+        org.clojars.lukaszkorecki/mokujin-logback {:local/root "../../mokujin-logback"}
         org.slf4j/jcl-over-slf4j {:mvn/version "2.0.13"}
         ch.qos.logback/logback-classic {:mvn/version "1.5.6"
                                         :exclusions [org.slf4j/slf4j-api]}
@@ -8,4 +9,5 @@
 
  :aliases {:run {:main-opts ["-m" "core"]}
            :stable {:extra-deps
-                    {org.clojars.lukaszkorecki/mokujin {:mvn/version "1.0.0.44"}}}}}
+                    {org.clojars.lukaszkorecki/mokujin {:mvn/version "1.0.0.44"}
+                     org.clojars.lukaszkorecki/mokujin-logback {:mvn/version "1.0.0.44"}}}}}

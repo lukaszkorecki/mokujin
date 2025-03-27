@@ -172,12 +172,12 @@
   Example:
 
   ```clojure
-  (log/with-context {:operation \"do-something\"}
+  (log/with-context {:operation "do-something"}
     (let [get-run-time-ms (log/timer)
           result (do-something)]
-      (log/info {:run-time-ms (get-run-time-ms)} \"do-something completed\")
+      (log/info {:run-time-ms (get-run-time-ms)} "do-something completed")
       (some-other-expensive-operation)
-      (log/info {:run-time-ms (get-run-time-ms)} \"some-other-expensive-operation completed\")
+      (log/info {:run-time-ms (get-run-time-ms)} "some-other-expensive-operation completed")
       result))
   ```
   "
