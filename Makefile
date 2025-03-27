@@ -15,7 +15,7 @@ jar:
 install:
 	$(foreach lib,$(LIB),clj -T:build install :lib $(lib) :snapshot $(SNAPSHOT);)
 
-publish:
+publish: clean jar
 	$(foreach lib,$(LIB),clj -T:build publish :lib $(lib) :snapshot $(SNAPSHOT);)
 
 # Dev/test tasks
