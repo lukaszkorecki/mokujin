@@ -7,10 +7,8 @@
                  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
                             "-Duser.timezone=UTC"
                             "-Dfile.encoding=UTF-8"]
-                 :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.16"}
-                              ch.qos.logback/logback-classic {:mvn/version "1.5.16"
-                                                              :exclusions [org.slf4j/slf4j-api]}
-                              net.logstash.logback/logstash-logback-encoder {:mvn/version "8.0"}}}
+                 :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.16"}}}
+
            :dev/repl {:main-opts ["-m" "clojure.main"]
                       :extra-paths ["dev-resources"]
                       :extra-deps {nrepl/nrepl {:mvn/version "1.3.1"}}}
@@ -19,15 +17,8 @@
                   :extra-paths ["dev-resources" "test"]
 
                   :extra-deps {cheshire/cheshire {:mvn/version "5.13.0"}
-                               lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
-
-           :benchmark {:main-opts ["-m" "mokujin.log-bench"]
-                       :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
-                                  "-Duser.timezone=UTC"
-                                  "-Dfile.encoding=UTF-8"]
-                       :paths ["src" "bench"]
-                       :extra-deps {criterium/criterium {:mvn/version "0.4.6"}
-                                    org.slf4j/slf4j-nop {:mvn/version "2.0.16"}}}
+                               lambdaisland/kaocha {:mvn/version "1.91.1392"}
+                               org.clojars.lukaszkorecki/mokujin-logback {:local/root "../mokujin-logback"}}}
 
            :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.7"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}

@@ -1,16 +1,19 @@
-.PHONY: test test-all test-logback test-log4j2 update-deps benchmark release clean jar publish
+.PHONY: test-core test-logback test-all test-ex-logback test-ex-log4j2 update-deps benchmark release clean jar publish
 
 
-test-all: test test-logback test-log4j2
+test-all: test-core test-logback test-ex-logback test-ex-log4j2
 	@echo "all done"
 
-test:
-	clj -M:dev:test
+test-core:
+	cd mokujin && clj -M:dev:test
 
 test-logback:
+	cd mokujin-logback & clj -M:dev:test
+
+test-ex-logback:
 	cd examples/logback && clj -M:run
 
-test-log4j2:
+test-ex-log4j2:
 	cd examples/log4j2 && clj -M:run
 
 benchmark:
@@ -26,10 +29,17 @@ ifneq ($(SNAPSHOT),)
 snapshot := :snapshot $(SNAPSHOT)
 endif
 
-clean:
-	clj -T:build clean
+clean: clean-core clean-logback
 
-jar:
+clean-core:
+	clj -T:build clean :lib-name mokujin
+
+clean-logback:
+	clj -T:build clean :lib-name mokujin-logback
+
+jar: jar-core jar-logback
+
+jar-core:
 	clj -T:build jar  $(snapshot)
 
 

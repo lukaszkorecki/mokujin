@@ -1,5 +1,5 @@
 {:paths ["." "resources"]
- :deps {mokujin/mokujin {:local/root "../../"}
+ :deps {mokujin/mokujin {:local/root "../../mokujin"}
 
         org.apache.logging.log4j/log4j-1.2-api {:mvn/version "2.23.1"}
         org.apache.logging.log4j/log4j-api {:mvn/version "2.23.1"}

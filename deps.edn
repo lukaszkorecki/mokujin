@@ -22,13 +22,6 @@
                   :extra-deps {cheshire/cheshire {:mvn/version "5.13.0"}
                                lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
 
-           :benchmark {:main-opts ["-m" "mokujin.log-bench"]
-                       :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
-                                  "-Duser.timezone=UTC"
-                                  "-Dfile.encoding=UTF-8"]
-                       :paths ["src" "bench"]
-                       :extra-deps {criterium/criterium {:mvn/version "0.4.6"}
-                                    org.slf4j/slf4j-nop {:mvn/version "2.0.16"}}}
 
            :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.7"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}

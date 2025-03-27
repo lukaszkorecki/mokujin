@@ -13,7 +13,7 @@
 (def basis (delay (b/create-basis {:project "deps.edn"})))
 
 (def ^:private pom-template
-  [[:description "Logback specific utilities for Mokujin logger"]
+  [[:description "A very thin wrapper around clojure.tools.logging which adds MDC support"]
    [:url "https://github.com/lukaszkorecki/mokujin"]
    [:licenses
     [:license

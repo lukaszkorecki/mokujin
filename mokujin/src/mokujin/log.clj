@@ -146,12 +146,12 @@
   ([level msg context?]
    (with-meta
      `(cond
-        (and (string? ~msg)
-             (map? ~context?)) (with-context ~context?
-                                 (log/log ~level ~msg))
+       (and (string? ~msg)
+            (map? ~context?)) (with-context ~context?
+                                (log/log ~level ~msg))
 
-        (and (string? ~msg)
-             (not (map? ~context?))) (log/log ~level ~msg))
+       (and (string? ~msg)
+            (not (map? ~context?))) (log/log ~level ~msg))
      (meta &form))))
 
 (defmacro logf
@@ -168,21 +168,8 @@
 
   This is useful if you want to instrument a function and return the time
   it took to run it and inject that into the MDC yourself.
-
-  Example:
-
-  ```clojure
-  (log/with-context {:operation "do-something"}
-    (let [get-run-time-ms (log/timer)
-          result (do-something)]
-      (log/info {:run-time-ms (get-run-time-ms)} "do-something completed")
-      (some-other-expensive-operation)
-      (log/info {:run-time-ms (get-run-time-ms)} "some-other-expensive-operation completed")
-      result))
-  ```
   "
-
-  [] ^long
+  []
   (let [start-time-ms (System/currentTimeMillis)]
     (fn ^{:start-time-ms start-time-ms} get-run-time-ms' []
       (- (System/currentTimeMillis) ^long start-time-ms))))
