@@ -5,5 +5,5 @@
 
  :aliases {:run {:main-opts ["-m" "core"]}
            :stable {:extra-deps
-                    {org.clojars.lukaszkorecki/mokujin {:mvn/version "1.0.0.44"}
-                     org.clojars.lukaszkorecki/mokujin-logback {:mvn/version "1.0.0.44"}}}}}
+                    {org.clojars.lukaszkorecki/mokujin {:mvn/version "1.0.061"}
+                     org.clojars.lukaszkorecki/mokujin-logback {:mvn/version "1.0.061"}}}}}

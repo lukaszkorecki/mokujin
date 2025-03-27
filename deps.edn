@@ -1,28 +1,6 @@
-{:paths ["src"]
- :deps {org.clojure/clojure {:mvn/version "1.12.0"}
-        org.clojure/tools.logging {:mvn/version "1.3.0"}
-        org.slf4j/slf4j-api {:mvn/version "2.0.16"}
-        org.clojure/data.xml {:mvn/version "0.2.0-alpha9"}}
-
- :aliases {:dev {:extra-paths ["dev-resources"]
-                 :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
-                            "-Duser.timezone=UTC"
-                            "-Dfile.encoding=UTF-8"]
-                 :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.16"}
-                              ch.qos.logback/logback-classic {:mvn/version "1.5.16"
-                                                              :exclusions [org.slf4j/slf4j-api]}
-                              net.logstash.logback/logstash-logback-encoder {:mvn/version "8.0"}}}
-           :dev/repl {:main-opts ["-m" "clojure.main"]
-                      :extra-paths ["dev-resources"]
-                      :extra-deps {nrepl/nrepl {:mvn/version "1.3.1"}}}
-
-           :test {:main-opts ["-m" "kaocha.runner"]
-                  :extra-paths ["dev-resources" "test"]
-
-                  :extra-deps {cheshire/cheshire {:mvn/version "5.13.0"}
-                               lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
-
-
-           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.7"}
+;; this top-level dependency file is only for jar builds & deploys
+;; each project contains it's own deps.edn
+{:paths []
+ :aliases {:build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.8"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
                    :ns-default build}}}

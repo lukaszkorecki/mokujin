@@ -1,7 +1,7 @@
 
 {:paths ["src"]
  :deps {org.clojure/data.xml {:mvn/version "0.2.0-alpha9"}
-        ch.qos.logback/logback-classic {:mvn/version "1.5.16"
+        ch.qos.logback/logback-classic {:mvn/version "1.5.18"
                                         :exclusions [org.slf4j/slf4j-api]}
         net.logstash.logback/logstash-logback-encoder {:mvn/version "8.0"}}
 
@@ -9,7 +9,7 @@
                  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
                             "-Duser.timezone=UTC"
                             "-Dfile.encoding=UTF-8"]
-                 :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.16"}
+                 :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.17"}
                               org.clojars.lukaszkorecki/mokujin {:local/root "../mokujin"}}}
 
            :dev/repl {:main-opts ["-m" "clojure.main"]
@@ -22,6 +22,6 @@
                   :extra-deps {cheshire/cheshire {:mvn/version "5.13.0"}
                                lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
 
-           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.7"}
+           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.8"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
                    :ns-default build}}}

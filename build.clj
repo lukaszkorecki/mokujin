@@ -2,83 +2,93 @@
   (:require [clojure.tools.build.api :as b]
             [deps-deploy.deps-deploy :as dd]))
 
-(def lib
+(defn log [level fmt & args]
+  (if (seq args)
+    (printf "[%s] %s\n" level (format fmt args))
+    (printf "[%s] %s\n" level fmt)))
+
+(let [url [:url "https://github.com/lukaszkorecki/mokujin"]
+      licenses [:licenses
+                [:license
+                 [:name "MIT"]
+                 [:url "https://opensource.org/license/mit/"]]]
+      scm [:scm
+           [:url "https://github.com/lukaszkorecki/mokujin"]
+           [:connection "scm:git:git://github.com/lukaszkorecki/mokujin.git"]
+           [:developerConnection "scm:git:ssh://git@github.com/lukaszkorecki/mokujin.git"]]]
+
+  (def pom-template
+    {"mokujin" [[:description "A very thin wrapper around clojure.tools.logging which adds MDC support"]
+                url
+                licenses
+                scm]
+
+     "mokujin-logback" [[:description "Logback extensions for Mokujin - easy confiugration, pre-configured appenders etc"]
+                        url
+                        licenses
+                        scm]}))
+
+(def lib-name->sym
   {"mokujin" 'org.clojars.lukaszkorecki/mokujin
    "mokujin-logback" 'org.clojars.lukaszkorecki/mokujin-logback})
 
-(def version-stable (format "1.0.0.%s" (b/git-count-revs nil)))
-
-(defn version-snapshot [suffix]
-  (format "%s-SNAPSHOT%s"
-          version-stable
-          (if suffix (str "-" suffix) "")))
-
-(def class-dir "target/classes")
-(defn jar-file [lib version]
-  (format "target/%s-%s.jar" (name lib) version))
-
-(def target "target")
-;; delay to defer side effects (artifact downloads)
-(def basis (delay (b/create-basis {:project "deps.edn"})))
-
-(def ^:private pom-template
-  [[:description "A very thin wrapper around clojure.tools.logging which adds MDC support"]
-   [:url "https://github.com/lukaszkorecki/mokujin"]
-   [:licenses
-    [:license
-     [:name "MIT"]
-     [:url "https://opensource.org/license/mit/"]]]
-   [:scm
-    [:url "https://github.com/lukaszkorecki/mokujin"]
-    [:connection "scm:git:git://github.com/lukaszkorecki/mokujin.git"]
-    [:developerConnection "scm:git:ssh://git@github.com/lukaszkorecki/mokujin.git"]]])
+(def version-base "1.0.0")
 
 (defn ^:private jar-opts
-  [{:keys [version] :as opts}]
-  (assoc opts
-         :lib lib
-         :version version
-         :jar-file (jar-file version)
-         :basis (b/create-basis)
-         :class-dir class-dir
-         :target target
-         :src-dirs ["src"]
-         :pom-data pom-template))
+  [{:keys [snapshot? lib] :as opts}]
+  (let [lib-sym (get lib-name->sym lib)
+        version (str version-base
+                     (b/git-count-revs nil)
+                     (when snapshot? "-SNAPSHOT"))
+        pom (get pom-template lib)]
+    (assoc opts
+           :lib lib-sym
+           :version version
+           :jar-file (str "target/" (name lib-sym) "-" version ".jar")
+           :basis (b/create-basis)
+           :class-dir "target/classes"
+           :target "target"
+           :src-dirs ["src"]
+           :pom-data pom)))
 
-;; Tasks
-
-(defn clean [_]
-  (b/delete {:path target}))
+(defn clean [{:keys [lib]}]
+  (b/with-project-root (name lib)
+    (log :WARN "cleaning %s" lib)
+    (b/delete {:path "target"})))
 
 (defn jar
-  [{:keys [lib-name snapshot] :as _args}]
-  (let [{:keys [jar-file] :as opts} (jar-opts {:version (if snapshot
-                                                          (version-snapshot snapshot)
-                                                          version-stable)})]
-    (println (format "Cleaning '%s'..." target))
-    (b/delete {:path "target"})
-    (println (format "Writing 'pom.xml'..."))
-    (b/write-pom opts)
-    (println (format "Copying source files to '%s'..." class-dir))
-    (b/copy-dir {:src-dirs ["src" "resources"] :target-dir class-dir})
-    (println (format "Building JAR to '%s'..." jar-file))
-    (b/jar opts)
-    (println "Finished.")))
+  [{:keys [lib snapshot] :as _args}]
+  (b/with-project-root (name lib)
+    (log :INFO "Building %s jar " lib)
+    (let [{:keys [jar-file class-dir] :as opts} (jar-opts {:lib (name lib)
+                                                           :snapshot? snapshot})]
+
+      (log :WARN "Cleaning")
+      (b/delete {:path "target"})
+      (log :INFO "Writing pom.xml")
+      (b/write-pom opts)
+
+      (log :INFO "Compiling")
+      (b/copy-dir {:src-dirs ["src" "resources"] :target-dir class-dir})
+      (b/jar opts)
+      (log :INFO "Finished: %s" jar-file))))
 
 (defn install
-  [{:keys [snapshot]}]
-  (let [{:keys [jar-file] :as opts} (jar-opts {:version (if snapshot
-                                                          (version-snapshot snapshot)
-                                                          version-stable)})]
-    (dd/deploy {:installer :local
-                :artifact (b/resolve-path jar-file)
-                :pom-file (b/pom-path (select-keys opts [:lib :class-dir]))})))
+  [{:keys [lib snapshot]}]
+  (b/with-project-root (name lib)
+    (let [{:keys [jar-file] :as opts} (jar-opts {:lib (name lib)
+                                                 :snapshot? snapshot})]
+      (log :INFO "installing %s" jar-file)
+      (dd/deploy {:installer :local
+                  :artifact (b/resolve-path jar-file)
+                  :pom-file (b/pom-path (select-keys opts [:lib :class-dir]))}))))
 
 (defn publish
-  [{:keys [snapshot]}]
-  (let [{:keys [jar-file] :as opts} (jar-opts {:version (if snapshot
-                                                          (version-snapshot snapshot)
-                                                          version-stable)})]
-    (dd/deploy {:installer :remote
-                :artifact (b/resolve-path jar-file)
-                :pom-file (b/pom-path (select-keys opts [:lib :class-dir]))})))
+  [{:keys [lib snapshot]}]
+  (b/with-project-root (name lib)
+    (let [{:keys [jar-file] :as opts} (jar-opts {:lib (name lib)
+                                                 :snapshot? snapshot})]
+      (log :INFO "publishing %s" jar-file)
+      (dd/deploy {:installer :remote
+                  :artifact (b/resolve-path jar-file)
+                  :pom-file (b/pom-path (select-keys opts [:lib :class-dir]))}))))
