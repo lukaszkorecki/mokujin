@@ -215,8 +215,7 @@ Pretty simple, just replace `clojure.tools.logging` with `mokujin.log` in your `
 Mokujin offers a sister library, `mokujin-logback` that provides a way to configure Logback from code, and provides a way to
 simplify its configuration. Rather than setting up class paths and XML files, you can configure Logback from code, using EDN.
 
-Futher more, Mokujin offers a couple of configuration preset for quick setup, which Work Well Most of the Time :tm:.
-
+Further more, Mokujin offers a couple of configuration preset for quick setup, which Work Well Most of the Time :tm:.
 
 ```clojure
 ;; assuming both mokujin and mokujin-logback are in your classpath
