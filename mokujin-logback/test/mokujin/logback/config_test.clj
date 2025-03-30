@@ -9,7 +9,7 @@
   (:import
    [java.io File]))
 
-(def split-lines str/split-lines)
+(defn split-lines [s] (->> s str/split-lines (map str/trim) (remove str/blank?)))
 
 (defn read-fixture [p]
   (slurp (io/resource p)))
@@ -122,4 +122,4 @@
               "test2 example=1"
               "INFO mokujin.logback.config-test test3 example=2"
               "INFO mokujin.logback.config-test test4 example=2"]
-             (str/split-lines (slurp tmp-file)))))))
+             (split-lines (slurp tmp-file)))))))
