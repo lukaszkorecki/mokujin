@@ -229,8 +229,7 @@ Further more, Mokujin offers a couple of configuration preset for quick setup, w
 (mokujin.logback/configure! {:config :mokujin.logback/json
                              :logger-filters {"org.eclipse.jetty" "ERROR"}})
 
-;; completely custom conifigration as EDN:
-
+;; completely custom configuration as EDN:
 (def l
 og-config
   [[:configuration
