@@ -14,10 +14,11 @@ jobs:
 
     container:
       image: clojure:openjdk-17-tools-deps-slim-buster
+
     steps:
     - uses: actions/checkout@v4
 
-      - name: Cache Clojure deps
+    - name: Cache Clojure deps
       uses: actions/cache@v4
       with:
         path: /root/.m2
