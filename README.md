@@ -98,8 +98,7 @@ Macbook M4 Pro.
 ## API & Usage
 
 The API is close enough that Mokujin is *almost* a drop-in replacement for `c.t.logging`, **however** to force good practices,
-logging functions that support format strings e.g. `log/infof` or `log/errorf` **do not suport the context map**.
-
+logging functions that support format strings e.g. `log/infof` or `log/errorf` **do not support the context map**.
 That's because in 99% of the cases where I'd use `log/infof` what I wanted to do was `(log/info "message" context)` instead.
 In cases where you really really want to use formatted strings and the context, this Works Just Fine :tm: :
 
