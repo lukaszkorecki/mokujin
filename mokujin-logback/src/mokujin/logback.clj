@@ -11,12 +11,14 @@
    [java.io ByteArrayInputStream InputStream]
    [org.slf4j LoggerFactory]))
 
+(set! *warn-on-reflection* true)
+
 (defn ^:private str->input-stream [^String s]
-  (ByteArrayInputStream. (.getBytes s)))
+  (ByteArrayInputStream. (String/.getBytes s)))
 
 (defn ^:private get-named-logger-and-context [logger-name]
-  (let [logger-context ^LoggerContext (LoggerFactory/getILoggerFactory)
-        logger (.getLogger logger-context ^String logger-name)]
+  (let [logger-context (LoggerFactory/getILoggerFactory)
+        logger (LoggerContext/.getLogger logger-context ^String logger-name)]
     {:logger logger :logger-context logger-context}))
 
 (defn ^:private initialize-and-configure! [config-stream]

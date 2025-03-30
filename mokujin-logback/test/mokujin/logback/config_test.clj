@@ -78,3 +78,48 @@
               "WARN m.l.config-test test warn extra=aw yeah, example=true"
               "ERROR m.l.config-test woah, error example=true"]
              (str/split-lines (slurp tmp-file)))))))
+
+(deftest config-live-update-test
+  (testing "config can be updated on the fly"
+    (let [tmp-file (File/createTempFile "mokujin." ".log")
+          tmp-log-file-path (str (File/.getPath tmp-file))
+
+          config-base [:configuration
+                       [:import {:class "ch.qos.logback.classic.encoder.PatternLayoutEncoder"}]
+                       [:import {:class "ch.qos.logback.core.FileAppender"}]
+                       [:appender {:name "FILE" :class "FileAppender"}
+                        [:file tmp-log-file-path]
+                        [:encoder {:class "PatternLayoutEncoder"}
+                         [:pattern "%msg %mdc%n"]]]
+
+                       [:root {:level "INFO"}
+                        [:appender-ref {:ref "FILE"}]]]
+
+          config-updated [:configuration
+                          [:import {:class "ch.qos.logback.classic.encoder.PatternLayoutEncoder"}]
+                          [:import {:class "ch.qos.logback.core.FileAppender"}]
+                          [:appender {:name "FILE" :class "FileAppender"}
+                           [:file tmp-log-file-path]
+                           [:encoder {:class "PatternLayoutEncoder"}
+                            [:pattern "%level %logger %msg %mdc%n"]]]
+
+                          [:root {:level "INFO"}
+                           [:appender-ref {:ref "FILE"}]]]]
+
+      (mokujin.logback/configure! {:config config-base})
+      (log/with-context {:example 1}
+        (log/info "test1")
+        (log/info "test2"))
+
+      (mokujin.logback/configure! {:config config-updated})
+      (log/with-context {:example 2}
+        (log/info "test3")
+        (log/info "test4"))
+
+      (Thread/sleep 20) ;; just in case
+
+      (is (= ["test1 example=1"
+              "test2 example=1"
+              "INFO mokujin.logback.config-test test3 example=2"
+              "INFO mokujin.logback.config-test test4 example=2"]
+             (str/split-lines (slurp tmp-file)))))))
