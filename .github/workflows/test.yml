@@ -16,19 +16,20 @@ jobs:
       image: clojure:openjdk-17-tools-deps-slim-buster
     steps:
     - uses: actions/checkout@v4
-    - name: Cache Clojure deps
+
+      - name: Cache Clojure deps
       uses: actions/cache@v4
       with:
         path: /root/.m2
-        key: v1-deps-${{ hashFiles('./deps.edn') }}
-        restore-keys: |
-          v1-deps-
-          v1-deps-${{ hashFiles('./deps.edn') }}
+        key: v1-deps-${{ hashFiles('./mokujin/deps.edn') }}-${{ hashFiles('./mokujin-logback/deps.edn') }}
 
-    - name: Run tests
-      run: clj -M:dev:test
+    - name: Run core tests
+      run: cd mokujin && clj -M:dev:test
       env:
         TZ: UTC
+
+    - name: Run logback extensions tests
+      run: cd mokujin-logback && clj -M:dev:test
 
     - name: Verify logback example
       run: cd examples/logback && clj -M:run

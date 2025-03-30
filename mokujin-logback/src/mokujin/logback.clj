@@ -11,49 +11,76 @@
    [java.io ByteArrayInputStream InputStream]
    [org.slf4j LoggerFactory]))
 
-(defn str->input-stream [^String s]
+(defn ^:private str->input-stream [^String s]
   (ByteArrayInputStream. (.getBytes s)))
 
-(defn- get-named-logger-and-context [logger-name]
+(defn ^:private get-named-logger-and-context [logger-name]
   (let [logger-context ^LoggerContext (LoggerFactory/getILoggerFactory)
         logger (.getLogger logger-context ^String logger-name)]
     {:logger logger :logger-context logger-context}))
 
-(defn- initialize-and-configure! [config-stream]
+(defn ^:private initialize-and-configure! [config-stream]
   (let [{:keys [logger logger-context]} (get-named-logger-and-context Logger/ROOT_LOGGER_NAME)
         configurator ^JoranConfigurator (JoranConfigurator.)]
     (.detachAndStopAllAppenders ^Logger logger)
     (.reset ^LoggerContext logger-context)
     (.setContext configurator ^LoggerContext logger-context)
-    (.doConfigure configurator ^InputStream config-stream)))
+    (.doConfigure configurator ^InputStream config-stream)
+    configurator))
+
+(def ^:private presets
+  {::json config/json
+   ::json-async config/json-async
+   ::text config/text})
+
+(defn ^:private config-type->xml-stream
+  [{:keys [config logger-filters]}]
+  (cond
+   (vector? config) (str->input-stream (config/data->xml-str config))
+    ;; "raw" XML string
+   (string? config) (str->input-stream config)
+    ;; io/resource most likely?
+   (instance? java.net.URL config) (.openStream ^java.net.URL config)
+
+   ;; one of 'preset' configurations
+   (#{::json ::json-async ::text} config) (let [cnf (apply (get presets config)
+                                                           (config/logger-filters->logback-loggers logger-filters))]
+                                            (str->input-stream cnf))
+   :else (throw
+          (ex-info "Uknown configuration type" {:config config :class (class config)}))))
 
 (defn configure!
   "Configure logback with the given configuration.
-  One of the keys nees to be present:
-  `xml-config-path` - path or resource to the logback configuration file, it will
-                      override any loaded loback configuration found
-                      in <classpath>/logback.xml or <classpath>/logback-test.xml
-  `config` - a map with logback configuration as XML string. Can be programatically created
-             by using `mokujin.logback.config/data->xml-str` or one of the preset functions:
-              - `mokujin.logback.config/json`
-              - `mokujin.logback.config/text`
+  Arguments are a map of:
+  - `:config` - can be either:
+    - a string - 'raw' XML configuration for Logback
+    - a resource - should point at Logback config in XML format
+    - a vector - implies that the vector is a data structure which can be converted to XML using `clojure.data.xml`
+                 and that the schema of this data is valid Logback configuration as represented in XML
+    - a namespaced keyword - a 'preset' config, valid values:
+     - `:mokujin.logback/text` - plain text logger, with MDC - useful for dev/test
+     - `:mokujin.logback/json` - basic JSON logger, includes all MDC fields, suitable for most usecases
+     - `:mokujin.logback/json-async` - produces JSON logs as the `json` configuration, but uses a buffering async appender to improve performance
+
+  - `:logger-filters` - when `:config` uses one of preset configurations, you can pass a map of `{package.qualifier.string log-level-string}` to control individual packages log level, e.g:
+
+  ```
+  :config ::logback/json
+  :logger-filters {\"redis.clients.jedis.JedisMonitor\" \"ERROR\"
+                   \"org.eclipse.jetty\" \"WARN\"}
+  ```
 
 
-  Note that it will not do any transformations to the configuration, so it needs to be in the correct format,
+
+  Note on the config-as-vector input: Mokujin will not do any transformations to the configuration,
+  so it needs to be in the correct format recorgnized by Logback,
   internally `clojure.data.xml/sexps-as-fragment` is used to convert the hiccup-style EDN data to XML.
   "
-  [{:keys [config]}]
-  (cond
-    ;; clj data -> xml
-    (vector? config) (with-open [conf ^java.io.Closeable (str->input-stream (config/data->xml-str config))]
-                       (initialize-and-configure! conf))
-    ;; "raw" XML string
-    (string? config) (with-open [conf ^java.io.Closeable (str->input-stream config)]
-                       (initialize-and-configure! conf))
-    ;; io/resource most likely?
-    (instance? java.net.URL config) (with-open [conf ^java.io.Closeable (.openStream ^java.net.URL config)]
-                                      (initialize-and-configure! conf))
-    :else (ex-info "Uknown configuration type" {:config config :class (class config)})))
+  [{:keys [config logger-filters]
+    :or {logger-filters []}}]
+  (with-open [conf ^java.io.Closeable (config-type->xml-stream {:config config
+                                                                :logger-filters logger-filters})]
+    (initialize-and-configure! conf)))
 
 (def levels
   {:all Level/ALL
