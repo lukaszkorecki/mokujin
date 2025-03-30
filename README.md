@@ -55,8 +55,7 @@ parsers in Fluentd and vector.dev.
 
 This is where [Mapped Diagnostic Context (MDC)](https://logback.qos.ch/manual/mdc.html) comes in. It's a way to attach structured data to your logs, that can be used by the log collector
 
-This way you get both structured data that can be used to dervive metrics, alerts etc in your log collector and human readable logs for debugging pruposes.
-
+This way you get both structured data that can be used to derive metrics, alerts etc in your log collector and human readable logs for debugging purposes.
 Mokujin emerged after years of working with different logging solutions in Clojure (and other languages), log aggregation
 systems and monitoring platforms. It strikes a balance between familiar API, and leveraging existing
 JVM logging ecosystem and all of its good (and less good) parts.
