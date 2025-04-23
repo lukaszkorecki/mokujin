@@ -41,3 +41,7 @@ test-ex-log4j2:
 
 benchmark:
 	cd bench && clj -M:benchmark
+
+
+help:
+	@grep -E '^[a-z]+:' ./Makefile
