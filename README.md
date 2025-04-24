@@ -4,11 +4,8 @@
 
 > Mokujin (木人 Wooden person?) is a character in the Tekken series of fighting games. It is a spiritually sensitive animated training dummy, and serves as a guardian of good against supernatural evil threats. Mokujin is made of logs, hence the name.
 
-
-
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin)
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin-logback.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin-logback)
-
 
 
 > [!WARNING]
@@ -98,10 +95,29 @@ Macbook M4 Pro.
 
 ## API & Usage
 
-The API is close enough that Mokujin is *almost* a drop-in replacement for `c.t.logging`, **however** to force good practices,
-logging functions that support format strings e.g. `log/infof` or `log/errorf` **do not support the context map**.
-That's because in 99% of the cases where I'd use `log/infof` what I wanted to do was `(log/info "message" context)` instead.
+### Full API
 
+```clojure
+(log/info [msg] [msg ctx])
+(log/warn [msg] [msg ctx])
+(log/debug [msg] [msg ctx])
+(log/trace [msg] [msg ctx])
+(log/error [msg] [exc msg] [exc msg ctx])
+(log/infof [fmt & fmt-args])
+(log/warnf [fmt & fmt-args])
+(log/debugf [fmt & fmt-args])
+(log/tracef [fmt & fmt-args])
+(log/errorf [fmt & fmt-args])
+(log/with-context [ctx & body])
+```
+
+Just like `clojure.tools.logging`, Mokujin preserves caller context, and ensures that the right
+information (namespace, line numbers) is injected into the log statement, under the `logger` field.
+
+The API is close enough that Mokujin is *almost* a drop-in replacement for `c.t.logging`, **however** to promote good practices, and
+maintain good performance logging functions that support format strings e.g. `log/infof` or `log/errorf` **do not support the context map** as input.
+
+That's because in 99% of the cases where I'd use `log/infof` what I wanted to do was `(log/info "message" context)` instead.
 In cases where you really really want to use formatted strings and the context, this Works Just Fine :tm: :
 
 ```clojure
@@ -181,24 +197,6 @@ To work around this, you can use `log/with-context` to wrap the form that needs 
       (log/info "hi!")))) ;; will have the context
 ```
 
-
-### Full API
-
-#### Logging statements
-
-```clojure
-(log/info [msg] [msg ctx])
-(log/warn [msg] [msg ctx])
-(log/debug [msg] [msg ctx])
-(log/error [msg] [exc msg] [exc msg ctx])
-(log/infof [fmt & fmt-args])
-(log/warnf [fmt & fmt-args])
-(log/debugf [fmt & fmt-args])
-(log/errorf [fmt & fmt-args])
-(log/with-context [ctx & body])
-```
-
-Mokujin preserves caller context, and ensures that the right information (namespace, line numbers) is injected into the log statement, under the `logger` field.
 
 ## Setup
 
