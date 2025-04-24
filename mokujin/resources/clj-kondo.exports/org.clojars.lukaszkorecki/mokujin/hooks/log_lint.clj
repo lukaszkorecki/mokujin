@@ -16,8 +16,8 @@
         arg-count (count (rest sexpr))
         [arg1 arg2 & _] (rest sexpr)]
     (cond
-      ;; error only accepts [throwable msg] or [msg] as args, so anything more than that is not valid
-      (>= arg-count 3)
+      ;; error only accepts [msg], [throwable msg] [throwable msg ctx] as args, so anything more than that is not valid
+      (> arg-count 3)
       (register! node "too many arguments passed to log/error" {:type :mokujin.log/invalid-arg-count})
 
       ;; we have two args but first is a string, indicates that 2nd arg is a context

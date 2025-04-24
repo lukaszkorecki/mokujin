@@ -61,9 +61,8 @@ Second part of ensuring that right things are logged and we keep a good performa
 
 ### How does it work?
 
-Mokujin wraps `clojure.tools.logging` and inject SLF4J's MDC into logging events, if provided. It tries to maintain a balance between new
-features and the API of a widely used library. Mokujin wraps standard logging macros (`info`, `warn` etc) and adds
-support for the context map argument, as the first argument.
+Mokujin wraps `clojure.tools.logging` and injects SLF4J's MDC into logging events, if provided. Mokujin wraps standard logging macros (`info`, `warn` etc)
+and adds support for the context map argument, as the last argument.
 
 Keep in mind that `infof` (and friends) variants are present, but do not support passing the MDC (more on that later).
 
@@ -77,7 +76,7 @@ processing you can expect a small slow down but still maintain sub-microsecond p
 your typical usage - most of applications running out there do a lot of I/O, where processing times are measured in milliseconds
 or seconds even, so any overhead introduced by logging is negligble.
 
-You can run the benchmark via `clj -M:benchmark`. Latest results (as of 30/03/2025) are:
+You can run the benchmark via `clj -M:benchmark`. Latest results (as of 30/03/2025) run on my M4 MBP are:
 
 ```
 #'mokujin.log-bench/mokujin-log : 76.876114 ns
@@ -86,9 +85,7 @@ You can run the benchmark via `clj -M:benchmark`. Latest results (as of 30/03/20
 #'mokujin.log-bench/tools-logging-log+context : 221.394879 ns
 ```
 
-Macbook M4 Pro.
-
-> [!INFO]
+> [!NOTE]
 > Benchmarks are tricky, and always should be taken with a grain of salt.
 > My sole focus with these is to ensure that Mokujin keeps up with `tools.logging` as far as performance is concerned.
 > There's many more variables that need to be taken into account when measuring performance impact of logs in your application.
