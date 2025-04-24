@@ -21,10 +21,10 @@
 ;;       or see if this is something that can be pushed down to Logback
 (defn- format-context [ctx]
   (persistent!
-   (reduce-kv (fn [m k v]
-                (assoc! m (->str k) (->str v)))
-              (transient {})
-              ctx)))
+    (reduce-kv (fn [m k v]
+                 (assoc! m (->str k) (->str v)))
+               (transient {})
+               ctx)))
 
 ;; TODO: use binding for the context?
 (defn mdc-put
@@ -87,6 +87,18 @@
         (log/log :debug ~msg))
      (meta &form))))
 
+(defmacro trace
+  "Trace log, pass message or ctx+message"
+  ([msg]
+   (with-meta
+     `(log/log :trace ~msg)
+     (meta &form)))
+  ([msg ctx]
+   (with-meta
+     `(with-context ~ctx
+        (log/log :trace ~msg))
+     (meta &form))))
+
 (defmacro error
   "Log an error message.
   [msg]
@@ -135,6 +147,11 @@
     `(log/logf :debug ~@args)
     (meta &form)))
 
+(defmacro tracef [& args]
+  (with-meta
+    `(log/logf :trace ~@args)
+    (meta &form)))
+
 ;; Re-export generic log functions but with context support
 ;; NOTE: these are SLOWER than dedicated log macros
 (defmacro log
@@ -146,12 +163,12 @@
   ([level msg context?]
    (with-meta
      `(cond
-       (and (string? ~msg)
-            (map? ~context?)) (with-context ~context?
-                                (log/log ~level ~msg))
+        (and (string? ~msg)
+             (map? ~context?)) (with-context ~context?
+                                 (log/log ~level ~msg))
 
-       (and (string? ~msg)
-            (not (map? ~context?))) (log/log ~level ~msg))
+        (and (string? ~msg)
+             (not (map? ~context?))) (log/log ~level ~msg))
      (meta &form))))
 
 (defmacro logf
@@ -160,16 +177,3 @@
   (with-meta
     `(log/logf ~level ~msg ~@args)
     (meta &form)))
-
-;; TODO: move this to utility-belt instead
-(defn timer
-  "When invoked captures current timestamp in ms, and returns a function
-  that when invoked returns the time in ms since the original invocation.
-
-  This is useful if you want to instrument a function and return the time
-  it took to run it and inject that into the MDC yourself.
-  "
-  []
-  (let [start-time-ms (System/currentTimeMillis)]
-    (fn ^{:start-time-ms start-time-ms} get-run-time-ms' []
-      (- (System/currentTimeMillis) ^long start-time-ms))))

@@ -1,0 +1,3 @@
+{:paths ["."]
+ :main-opts ["-m" "core"]
+ :deps {org.clojars.lukaszkorecki/mokujin {:local/root "../../mokujin"}}}
