@@ -1,0 +1,20 @@
+{:hooks {:analyze-call {mokujin.log/info hooks.log-lint/log-args
+                        mokujin.log/warn hooks.log-lint/log-args
+                        mokujin.log/trace hooks.log-lint/log-args
+                        mokujin.log/debug hooks.log-lint/log-args
+
+                        mokujin.log/infof hooks.log-lint/logf-args
+                        mokujin.log/warnf hooks.log-lint/logf-args
+                        mokujin.log/tracef hooks.log-lint/logf-args
+                        mokujin.log/debugf hooks.log-lint/logf-args
+
+                        mokujin.log/error hooks.log-lint/error-log-args
+                        mokujin.log/errorf hooks.log-lint/log-errof-args}}
+
+ :linters {:redundant-ignore {:exclude [:clojure-lsp/unused-public-var]}
+           :mokujin.log/error-log-too-many-args {:level :error}
+           :mokujin.log/log-statement-too-many-arguments {:level :error}
+           :mokujin.log/error-log-context-not-supported {:level :warning}
+           :mokujin.log/error-log-map-args {:level :warning}
+           :mokujin.log/log-message-not-string {:level :warning}
+           :mokujin.log/log-context-not-map {:level :warning}}}

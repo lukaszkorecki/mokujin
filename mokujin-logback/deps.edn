@@ -1,0 +1,26 @@
+{:paths ["src"]
+ :deps {org.clojure/data.xml {:mvn/version "0.2.0-alpha9"}
+        ch.qos.logback/logback-classic {:mvn/version "1.5.18"
+                                        :exclusions [org.slf4j/slf4j-api]}
+        net.logstash.logback/logstash-logback-encoder {:mvn/version "8.0"}}
+
+ :aliases {:dev {:extra-paths ["dev-resources"]
+                 :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
+                            "-Duser.timezone=UTC"
+                            "-Dfile.encoding=UTF-8"]
+                 :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.17"}
+                              org.clojars.lukaszkorecki/mokujin {:local/root "../mokujin"}}}
+
+           :dev/repl {:main-opts ["-m" "clojure.main"]
+                      :extra-paths ["dev-resources"]
+                      :extra-deps {nrepl/nrepl {:mvn/version "1.3.1"}}}
+
+           :test {:main-opts ["-m" "kaocha.runner"]
+                  :extra-paths ["dev-resources" "test"]
+
+                  :extra-deps {cheshire/cheshire {:mvn/version "5.13.0"}
+                               lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
+
+           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.8"}
+                          slipset/deps-deploy {:mvn/version "0.2.2"}}
+                   :ns-default build}}}

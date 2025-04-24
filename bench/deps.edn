@@ -1,0 +1,8 @@
+{:paths ["."]
+ :deps {org.clojars.lukaszkorecki/mokujin {:local/root "../mokujin"}
+        criterium/criterium {:mvn/version "0.4.6"}
+        org.slf4j/slf4j-nop {:mvn/version "2.0.16"}}
+ :aliases {:benchmark {:main-opts ["-m" "mokujin.log-bench"]
+                       :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
+                                  "-Duser.timezone=UTC"
+                                  "-Dfile.encoding=UTF-8"]}}}

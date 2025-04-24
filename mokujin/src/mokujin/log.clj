@@ -17,13 +17,16 @@
       (.toString ^Object val))
     ""))
 
+;; TODO: add context-sanitizer dynamic var to use it to remove or redact specific keys and values from the context map
+;;       or see if this is something that can be pushed down to Logback
 (defn- format-context [ctx]
   (persistent!
-   (reduce-kv (fn [m k v]
-                (assoc! m (->str k) (->str v)))
-              (transient {})
-              ctx)))
+    (reduce-kv (fn [m k v]
+                 (assoc! m (->str k) (->str v)))
+               (transient {})
+               ctx)))
 
+;; TODO: use binding for the context?
 (defn mdc-put
   "Take a context map and put it into the MDC. Keys and values will be stringified."
   [ctx]
@@ -84,6 +87,18 @@
         (log/log :debug ~msg))
      (meta &form))))
 
+(defmacro trace
+  "Trace log, pass message or ctx+message"
+  ([msg]
+   (with-meta
+     `(log/log :trace ~msg)
+     (meta &form)))
+  ([msg ctx]
+   (with-meta
+     `(with-context ~ctx
+        (log/log :trace ~msg))
+     (meta &form))))
+
 (defmacro error
   "Log an error message.
   [msg]
@@ -105,8 +120,13 @@
         (log/log :error ~exc ~msg))
      (meta &form))))
 
+;; TODO: create a deflog macro which reduces duplication above ^^^^
+
+;; See how Cambium did it: https://github.com/cambium-clojure/cambium.core/blob/31a67a6ea2dd54ed9497873af7bb17a8213f8d37/src/cambium/core.clj#L158C1-L171C112
+
 ;; re-export infof/errorf/warnf/debugf for convenience,
 ;; API is unchanged  - as in, context map is not supported
+;; TODO: we could destructure last arg to be a context map, but what if somebody passes something that shouldn't be in the context?
 (defmacro infof [& args]
   (with-meta
     `(log/logf :info ~@args)
@@ -125,6 +145,11 @@
 (defmacro debugf [& args]
   (with-meta
     `(log/logf :debug ~@args)
+    (meta &form)))
+
+(defmacro tracef [& args]
+  (with-meta
+    `(log/logf :trace ~@args)
     (meta &form)))
 
 ;; Re-export generic log functions but with context support
@@ -152,28 +177,3 @@
   (with-meta
     `(log/logf ~level ~msg ~@args)
     (meta &form)))
-
-(defn timer
-  "When invoked captures current timestamp in ms, and returns a function
-  that when invoked returns the time in ms since the original invocation.
-
-  This is useful if you want to instrument a function and return the time
-  it took to run it and inject that into the MDC yourself.
-
-  Example:
-
-  ```clojure
-  (log/with-context {:operation \"do-something\"}
-    (let [get-run-time-ms (log/timer)
-          result (do-something)]
-      (log/info {:run-time-ms (get-run-time-ms)} \"do-something completed\")
-      (some-other-expensive-operation)
-      (log/info {:run-time-ms (get-run-time-ms)} \"some-other-expensive-operation completed\")
-      result))
-  ```
-  "
-
-  [] ^long
-  (let [start-time-ms (System/currentTimeMillis)]
-    (fn ^{:start-time-ms start-time-ms} get-run-time-ms' []
-      (- (System/currentTimeMillis) ^long start-time-ms))))

@@ -8,6 +8,14 @@
        ;; NOTE: we can use indent-str here to make it more readable as perf doesn't matter
        (xml/indent-str)))
 
+(defn logger-filters->logback-loggers
+  "Converts a map of {package-1-str log-level-str  package-2-str log-level-str} into
+   valid ready for xmlifying list of loggers"
+  [filters-map]
+  (->> filters-map
+       (mapv (fn [[package level]]
+               [:logger {:name package :level level}]))))
+
 (defn json
   "Creates a logback configuration with JSON output.
   Optionally takes a list of loggers to add to the configuration e.g
@@ -19,9 +27,7 @@
   [& loggers]
   (data->xml-str
    [:configuration
-
-    [:status-listener {:class "ch.qos.logback.core.status.NopStatusListener"}]
-
+    [:statusListener {:class "ch.qos.logback.core.status.NopStatusListener"}]
     [:appender {:name "STDOUT_JSON", :class "ch.qos.logback.core.ConsoleAppender"}
 
      [:encoder {:class "net.logstash.logback.encoder.LogstashEncoder"}
@@ -31,11 +37,11 @@
       [:fieldNames
        [:timestamp "timestamp"]
        [:version "[ignore]"]
-       [:levelValue "[ignore"]]]]
+       [:levelValue "[ignore]"]]]]
 
     loggers
 
-    [:root {:level "info"}
+    [:root {:level "INFO"}
      [:appender-ref {:ref "STDOUT_JSON"}]]]))
 
 (defn json-async [& loggers]
@@ -50,7 +56,7 @@
       [:fieldNames
        [:timestamp "timestamp"]
        [:version "[ignore]"]
-       [:levelValue "[ignore"]]]]
+       [:levelValue "[ignore]"]]]]
 
     ;; now pipe STDOUT_JSON to the ASYNC appender
     [:appender {:name "ASYNC", :class "ch.qos.logback.classic.AsyncAppender"}
@@ -60,7 +66,7 @@
 
     loggers
 
-    [:root {:level "info"}
+    [:root {:level "INFO"}
      [:appender-ref {:ref "ASYNC"}]]]))
 
 (defn text
@@ -77,13 +83,10 @@
   [& loggers]
   (data->xml-str
    [:configuration
-    [:status-listener {:class "ch.qos.logback.core.status.NopStatusListener"}]
-    [:appender {:name "STDOUT", :class "ch.qos.logback.core.ConsoleAppender"}
-
+    [:appender {:name "PLAIN_TEXT", :class "ch.qos.logback.core.ConsoleAppender"}
      [:encoder
+      [:pattern "%date [%thread] [%logger] [%level] %msg %mdc%n"]]]
+    loggers
 
-      [:pattern "%date [%thread]   [%logger] [%level] %msg %mdc%n"]]
-     loggers
-
-     [:root {:level "info"}
-      [:appender-ref {:ref "STDOUT"}]]]]))
+    [:root {:level "INFO"}
+     [:appender-ref {:ref "PLAIN_TEXT"}]]]))

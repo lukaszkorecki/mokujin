@@ -73,10 +73,11 @@
   (testing "after"
     (is (nil? (MDC/get "foo")))))
 
-(deftest mdcs-doesnt-spill-over-on-error-in-message
+(deftest mdc-doesnt-persist-after-error-in-log-statement
   (testing "init state"
     (is (nil? (MDC/get "foo"))))
   (try
+    #_{:clj-kondo/ignore [:mokujin.log/log-message-not-string]}
     (log/info (format "%s" (throw (Exception. "foo"))) {:foo "bar"})
     (catch Exception _err
       (is (= {} (log/current-context)))
@@ -222,11 +223,6 @@
              :stack_trace {:count 4 :message "java.lang.AssertionError: Assert failed: false"}
              :thread_name "test-2"}]
            (filter #(= (:thread_name %) "test-2") captured-logs)))))
-
-(deftest timer-test
-  (let [get-run-time (log/timer)]
-    (Thread/sleep 100)
-    (is (>= (get-run-time) 100))))
 
 (deftest generic-log-marco-test
   (testing "`log` macro"

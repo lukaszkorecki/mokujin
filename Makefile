@@ -1,39 +1,47 @@
-.PHONY: test test-all test-logback test-log4j2 update-deps benchmark release clean jar publish
+.PHONY: test-core test-logback test-all test-ex-logback test-ex-log4j2 update-deps benchmark release clean jar publish
 
 
-test-all: test test-logback test-log4j2
-	@echo "all done"
+# Build & release tasks
+SNAPSHOT ?= false
+LIB = mokujin mokujin-logback
 
-test:
-	clj -M:dev:test
+clean:
+	$(foreach lib,$(LIB),clj -T:build clean :lib $(lib);)
 
-test-logback:
-	cd examples/logback && clj -M:run
+jar:
+	$(foreach lib,$(LIB),clj -T:build jar :lib $(lib) :snapshot $(SNAPSHOT);)
 
-test-log4j2:
-	cd examples/log4j2 && clj -M:run
 
-benchmark:
-	clj -M:benchmark
+install:
+	$(foreach lib,$(LIB),clj -T:build install :lib $(lib) :snapshot $(SNAPSHOT);)
+
+publish: clean jar
+	$(foreach lib,$(LIB),clj -T:build publish :lib $(lib) :snapshot $(SNAPSHOT);)
+
+# Dev/test tasks
+
 
 update-deps:
 	clj -M:dev/outdated
-	cd examples/logback && clj -M:dev/outdated
-	cd examples/log4j2 && clj -M:dev/outdated
+
+test-all: test-core test-logback test-ex-logback test-ex-log4j2
+	@echo "all done"
+
+test-core:
+	cd mokujin && clj -M:dev:test
+
+test-logback:
+	cd mokujin-logback & clj -M:dev:test
+
+test-ex-logback:
+	cd examples/logback && clj -M:run
+
+test-ex-log4j2:
+	cd examples/log4j2 && clj -M:run
+
+benchmark:
+	cd bench && clj -M:benchmark
 
 
-ifneq ($(SNAPSHOT),)
-snapshot := :snapshot $(SNAPSHOT)
-endif
-
-clean:
-	clj -T:build clean
-
-jar:
-	clj -T:build jar  $(snapshot)
-
-
-publish:
-	clj -T:build publish $(snapshot)
-
-release: clean jar publish
+help:
+	@grep -E '^[a-z]+:' ./Makefile

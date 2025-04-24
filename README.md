@@ -2,12 +2,10 @@
 
 <img src="https://static.wikia.nocookie.net/topstrongest/images/1/15/Mokujin_TTT2.png/revision/latest/scale-to-width-down/1000?cb=20200503180655" align="right" height="250" />
 
-> Mokujin (木人 Wooden person?) is a character in the Tekken series of fighting games. It is a spiritually sensitive animated training dummy, and serves as a guardian of good against supernatural evil threats.
-
-
+> Mokujin (木人 Wooden person?) is a character in the Tekken series of fighting games. It is a spiritually sensitive animated training dummy, and serves as a guardian of good against supernatural evil threats. Mokujin is made of logs, hence the name.
 
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin)
-
+[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin-logback.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin-logback)
 
 
 > [!WARNING]
@@ -16,26 +14,50 @@
 
 ## Just enough (structured) logging
 
+### Quick example
+
+
+```clojure
+;; assuming that log4j2 or logback are on the classpath
+(require '[mokujin.log :as log])
+
+
+(log/info "hi!")
+
+(try
+   ....
+   (catch Exception e
+     (log/error e "something went wrong")))
+
+
+;; pass a context map
+(log/info "hi!" {:foo "bar" :baz "qux"})
+
+(log/with-context {"my-key" "my-value"}
+  (log/info "hi!"))
+```
+
 
 ### Rationalle
 
-`clojure.tools.logging` is Good Enough :tm: solution for majority (if not all) your logging needs. It's fast, works with any
+`clojure.tools.logging` is a Good Enough :tm: solution for majority (if not all) your logging needs. It's fast, works with any
 logging backend supported on the JVM and is incredibly simple to use.
 
 The only area where it falls short is producing structured logs.
 
 In the past I'd use [`logfmt`-like](https://brandur.org/logfmt) formatting style when using `infof` (and friends) to produce logs.
-Then I'd configure the log ingester to parse log lines using this format. That's fine for simple cases, but as soon as
-exceptions (and stack traces) got thrown into the mix, I fell into the deep rabbit hole ofmulti-line log
-parsers in Fluentd and vector.dev.
+Then I'd configure the log ingester (like FluentD) to parse log lines using this format. That's fine for simple cases, but as soon as
+exceptions and  stack traces got thrown into the mix, I fell into the deep rabbit hole of multi-line log parsers and never quite made it back.
 
-There's a way out of this though - [Mapped Diagnostic Context (MDC)](https://logback.qos.ch/manual/mdc.html) - as
-way of adding **structured** information to your logs. This way you get both structured data that can be used to
-dervive metrics, alerts etc in your log collector and human readable logs for debugging pruposes.
+What we want instead is descriptive log messages, with the ability to attach structured data to them.
 
-Mokujin emerged after years of working with different logging solutions in Clojure (and other languages), log aggregation
-systems and monitoring platforms. It strikes a balance between familiar API, and leveraging existing
-JVM logging ecosystem and all of its good (and less good) parts.
+This is where [Mapped Diagnostic Context (MDC)](https://logback.qos.ch/manual/mdc.html) comes in. Combined with different logging backends and appenders, we can produce easy to read logs during dev time, and emit logs as data in production.
+
+Second part of ensuring that right things are logged and we keep a good performance profile is restricting how logging is done, and what is logged:
+
+- prohibit var-arg dispatch
+- only flat maps are allowed
+- discourage use of `printf` style logging
 
 ### How does it work?
 
@@ -53,96 +75,47 @@ introduced by manipulating the MDC object. Typical "raw" call to `clojure.tools.
 Same call to `mokujin.log/info` will have nearly the same performance characteristics. Only when introducing several levels of MDC
 processing you can expect a small slow down but still maintain sub-microsecond performance. This is absolutely fine for
 your typical usage - most of applications running out there do a lot of I/O, where processing times are measured in milliseconds
-or seconds event, so any overhead introduced by logging is negligble.
+or seconds even, so any overhead introduced by logging is negligble.
 
-You can run the benchmark via `clj -M:benchmark`. Latest results (as of April 9th, 2024):
+You can run the benchmark via `clj -M:benchmark`. Latest results (as of 30/03/2025) are:
 
 ```
-#'mokujin.log-bench/mokujin-log : 121.528074 ns
-#'mokujin.log-bench/mokujin-log+context : 614.801815 ns
-#'mokujin.log-bench/tools-logging-log : 127.343391 ns
-#'mokujin.log-bench/tools-logging-log+context : 383.410334 ns
+#'mokujin.log-bench/mokujin-log : 76.876114 ns
+#'mokujin.log-bench/mokujin-log+context : 346.391248 ns
+#'mokujin.log-bench/tools-logging-log : 78.078607 ns
+#'mokujin.log-bench/tools-logging-log+context : 221.394879 ns
 ```
+
+Macbook M4 Pro.
 
 > [!INFO]
 > Benchmarks are tricky, and always should be taken with a grain of salt.
 > My sole focus with these is to ensure that Mokujin keeps up with `tools.logging` as far as performance is concerned.
 > There's many more variables that need to be taken into account when measuring performance impact of logs in your application.
 
-### Show me the codes!
-
-Rather than logging something like this (you probably shouldn't include emails in your logs, but that's a different topic):
-
-```clojure
-(require '[clojure.tools.logging :as log])
-
-(defn do-signup [req]
-  (let [user (create-user .... )]
-    (if (:id user)
-      (log/infof "signup user_id=%s email=%s" (:id user) (:email user))
-      (log/errorf "signup failed email=%s" (:email (:body req))))))
-
-```
-
-You are (probably) be better off doing something like this, and structure your logs to avoid your log collector parsing them using regex patterns:
-
-
-```clojure
-(defn create-user [{:keys [email]}]
-  {:id "foo" :email email})
-
-(require '[mokujin.log :as log])
-
-(defn do-sign-up [req]
-  (log/with-context {:flow "signup" :email (:email (:body req))}
-    (let [user (create-user req)]
-      (if (:id user)
-        (log/info "success" {:id (:id user)})
-        (log/error "failed")))))
-
-(do-sign-up {:body  {:email "test@example.com"}})
-```
-
-It would produce the following:
-
-```
-2023-11-03 17:53:25,850 [app.server] [user] [INFO] success flow=signup, email=test@example.com, id=foo
-```
-
-```json
-{
-  "timestamp": "2023-11-03T17:53:25.850957Z",
-  "message": "success",
-  "logger_name": "user",
-  "thread_name": "app.server",
-  "level": "INFO",
-  "flow": "signup",
-  "email": "test@example.com",
-  "id": "foo"
-}
-
-
-```
-
-> [!NOTE]
-> Output depends on the logging backend and appender configuration
-
-
-From here, you can add/write a Ring middleware to inject request data to the logging context and make all your logging statements simpler.
-
-In my own projects, I'm using Mokujin with Logback and Logback's Logstash appender for producing JSON logs that get sent to a JSON-aware log collector.
-Very simple middlewares for Ring, Hato and the background processing system ensure that all logs are enriched by contextual data (uri's, request/response time etc).
-
-## Logging backend support
-
-Technically, anything that supports SLF4j and  MDC should work with some configuration. See `examples` directory and
-Getting started section - Logback and log4j2 examples are provided.
-
-
 ## API & Usage
 
-The API is close enough that Mokujin is *almost* a drop-in replacement for `c.t.logging`, **however** to force good practices,
-logging functions that support format strings e.g. `log/infof` or `log/errorf` **do not suport the context map**.
+### Full API
+
+```clojure
+(log/info [msg] [msg ctx])
+(log/warn [msg] [msg ctx])
+(log/debug [msg] [msg ctx])
+(log/trace [msg] [msg ctx])
+(log/error [msg] [exc msg] [exc msg ctx])
+(log/infof [fmt & fmt-args])
+(log/warnf [fmt & fmt-args])
+(log/debugf [fmt & fmt-args])
+(log/tracef [fmt & fmt-args])
+(log/errorf [fmt & fmt-args])
+(log/with-context [ctx & body])
+```
+
+Just like `clojure.tools.logging`, Mokujin preserves caller context, and ensures that the right
+information (namespace, line numbers) is injected into the log statement, under the `logger` field.
+
+The API is close enough that Mokujin is *almost* a drop-in replacement for `c.t.logging`, **however** to promote good practices, and
+maintain good performance logging functions that support format strings e.g. `log/infof` or `log/errorf` **do not support the context map** as input.
 
 That's because in 99% of the cases where I'd use `log/infof` what I wanted to do was `(log/info "message" context)` instead.
 In cases where you really really want to use formatted strings and the context, this Works Just Fine :tm: :
@@ -152,7 +125,19 @@ In cases where you really really want to use formatted strings and the context, 
   (log/infof "thing %s happened to %s" thing-a thing-b))
 ```
 
+Second difference is that only 1- and 2-arity (or in case of `log/error` 3-arity) log functions are suported, so:
+
+```clojure
+;; work's in clojure.tools.logging, but will throw an exception in Mokujin
+
+(log/info "hello" "there" "world")
+```
+
+To help with migration and good log hygine Mokujin ships with custom hooks for `clj-kondo`.
+
+
 ### The context
+
 
 The context is a `Map[String]String` internally. To make it easier to work with standard log ingestion infrastructure,
 all keywords present in the keys and values are converted to `"snake_case"` strings. Other value types are stringified.
@@ -162,36 +147,11 @@ If you need to change the layout of the produced log line, you can and should de
 > [!WARNING]
 > Nested maps or other "rich" data types are not allowed - this is something that might change in the future.
 
-### Full API
 
-#### Logging statements
-
-```clojure
-(log/info [msg] [msg ctx])
-(log/warn [msg] [msg ctx])
-(log/debug [msg] [msg ctx])
-(log/error [msg] [exc msg] [exc msg ctx])
-(log/infof [fmt & fmt-args])
-(log/warnf [fmt & fmt-args])
-(log/debugf [fmt & fmt-args])
-(log/errorf [fmt & fmt-args])
-(log/with-context [ctx & body])
-```
-
-Mokujin preserves caller context, and ensures that the right information (namespace, line numbers) is injected into the log statement, under the `logger` field.
-
-> [!WARNING]
-> `log/error` doesn't support the context/MDC argument for 1- and 2-arity variants, again - you're better off wrapping the form in `log/with-context` (see below) and using that as extra information attached to all logs
-> carried over with the exception - that's how I enrich exceptions tracked by Sentry's LogBack appender.
-> Additionally, figuring out the types of passed in arguments gets complicated as we'd have to distinguish between the context map, exception, message string and rest of the args
-> and that introduces overhead that we don't want.
-> This is the only area of Mokujin's user-facing API that *might* change, maybe.
-
-
-#### Context macro
+#### `with-context`
 
 You can use `with-context` macro, to set context for a form, request handler body etc.
-Contexts can be nested.
+Contexts can be nested, but see the next section for caveats.
 
 All map keys and values will be stringified using `name` + `str` combo.
 
@@ -211,95 +171,102 @@ Example:
           (log/error "problem with notification processing"))))))
 ```
 
-As expected, context are merged - including nested `with-context` forms and contexts added to individual logging statements.
+#### Context and threads
 
-# Getting started
+MDC is bound to the current thread and won't be propagated to other threads e.g. when dispatching a future or a thread pool task from a Ring handler.
+
+``` clojure
+(log/with-context {:foo "bar"}
+  (future
+    (log/info "hi!"))) ;; won't have the context
+```
 
 
-To get started, add Mokujin to your `deps.edn` or `project.cj`
+> [!INFO]
+> This **might change** in the future, but for now, you're better off passing the context explicitly to the function that needs it.
 
 
-[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin)
+To work around this, you can use `log/with-context` to wrap the form that needs the context:
 
 
+``` clojure
+(log/with-context {:foo "bar"}
+  (let [current-context (log/get-context)])
+  (future
+    (log/with-context current-context
+      (log/info "hi!")))) ;; will have the context
+```
 
-But wait, **you're not done yet**! You need to include a logging backend which suports MDC. For Logback, this would be:
 
+## Setup
+
+First of all you need to include Mokujin as your dependency. Second step is to use a logging backend that supports MDC.
+Most popular choices are Logback and Log4j2. See `examples` directory for both.
+
+Once you have your logging backend set up, you can start using Mokujin by using `mokujin.log` namespace.
+
+### Migrating from `clojure.tools.logging`
+
+Pretty simple, just replace `clojure.tools.logging` with `mokujin.log` in your `ns` declaration and you're mostly there. Run `clj-kondo --lint .` and look for
+warnings or errors in `:mokujin.log` keyword namespace
+
+### Logback
+
+`mokujin-logback` is a sister library which provides a set of helpers to configure Logback and simplify its configuration.
+Rather than setting up class paths and XML files, you can configure Logback from code, using EDN. You can of course keep using your hand-crafted, artisanal XML files
+if you have them already. Both legacy and new XML formats are supported.
+
+JSON appender is provided by default, by bundling Logstash appender.
+
+To make it easy, Mokujin offers a couple of configuration presets for quick setup, which are suitable for most use cases.
 
 ```clojure
-{io.github.lukaszkorecki/mokujin {:mvn/version "...."}
- org.slf4j/jcl-over-slf4j {:mvn/version "2.0.9"}
- ch.qos.logback/logback-classic {:mvn/version "1.4.11"
-                                 :exclusions [org.slf4j/slf4j-api]}
- ;; for JSON output, you can use:
- net.logstash.logback/logstash-logback-encoder {:mvn/version "7.4"}}
+;; assuming both mokujin and mokujin-logback are in your classpath
+(require '[mokujin.log :as log]
+         '[mokujin.logback :as logback])
+
+
+;; in your REPL init code
+(mokujin.logback/configure! {:config :mokujin.logback/text})
+
+
+;; in `core` namespace of your application:
+(mokujin.logback/configure! {:config :mokujin.logback/json
+                             :logger-filters {"org.eclipse.jetty" "ERROR"}})
+
+;; completely custom configuration as EDN:
+(def log-config
+  [[:configuration
+    [:appender
+     {:name "STDOUT"
+      :class "ch.qos.logback.core.ConsoleAppender"
+      :encoder
+      [:pattern
+       {:pattern "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"}]}]
+    [:root
+     {:level "debug"
+      :appender-ref
+      {:ref "STDOUT"}}]]])
+
+(mokujin.logback/configure! {:config log-config})
+
+
+;; XML files (both pre 1.3 and 1.3+ formats are supported) - as long as logback.xml or logback-test.xml is in your classpath
+;; they will be loaded automatically, but you can also specify a custom one at run time:
+(mokujin.logback/configure! {:config (io/resource "logback.xml")})
 ```
 
-and creating a configuration file, stored in the class path (usually `resources/logback.xml`).
 
-<details>
-  <summary>
-    <strong>Sample Logback configuration</strong>
-  </summary>
+Logback's configuration system is very powerful, and provides several features, including MDC processing, log rotation, and more.
+This way we can delegate things like redacting MDC or async appenders to Logback, and keep Mokujin focused on providing streamlined API.
 
-Here's my Logback configuration that I use in all production projects, with logs shipped to something that understands JSON/structured logging (Loki, Better Stack's Logs etc)
-Production config, stored in `resources/logback.xml`:
-
-
-```xml
-<configuration>
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-      <fieldNames>
-        <!-- rename @timestamp to just timestamp -->
-        <timestamp>timestamp</timestamp>
-        <!-- don't need these -->
-        <version>[ignore]</version>
-        <levelValue>[ignore]</levelValue>
-      </fieldNames>
-      <mdc>
-        <excludeMdcKeyName>email</excludeMdcKeyName>
-      </mdc>
-    </encoder>
-  </appender>
-
-  <!-- whatever ignores you need -->
-  <logger name="bananas.core" level="WARN" />
-  <logger name="taskmaster.async" level="ERROR" />
-  <logger name="somethnig.else" level="ERROR" />
-  <logger name="noisy.web-server" level="OFF" />
-  <logger name="com.zaxxer.hikari.HikariDataSource" level="OFF" />
-
-
-  <root level="info">
-    <appender-ref ref="STDOUT" />
-  </root>
-</configuration>
-
-```
-
-Development/test config, stored in `dev-resources/logback-test.xml`:
-
-
-```xml
-<configuration scan="true" scanPeriod="10 seconds">
-  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%date [%thread] [%logger] [%level] %msg %mdc%n</pattern>
-    </encoder>
-  </appender>
-  <root level="info">
-    <appender-ref ref="STDOUT" />
-  </root>
-
-</configuration>
-```
-
-</details>
+Check `:mokujin.logback/json-async` configuration preset for a good example of how to set up async appenders with MDC support.
 
 ## TODO
 
-- [x] Maven release?
+- [x] Maven release
 - [x] Improve performance of adding/removing keys from the MDC - see Cambium's or Aviso-logging source for a good approach
 - [x] Finalize `log/error` API - it works, but there are cases where its usage can be confusing
+- [x] Split library into core and logback-specific components
+- [ ] timing support - some form of `with-timing` macro or an arg on `with-context`
 - [ ] Provide a way to customize how context data is transformed
