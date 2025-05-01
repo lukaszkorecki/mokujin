@@ -2,7 +2,9 @@
 
 <img src="https://static.wikia.nocookie.net/topstrongest/images/1/15/Mokujin_TTT2.png/revision/latest/scale-to-width-down/1000?cb=20200503180655" align="right" height="250" />
 
-> Mokujin (木人 Wooden person?) is a character in the Tekken series of fighting games. It is a spiritually sensitive animated training dummy, and serves as a guardian of good against supernatural evil threats. Mokujin is made of logs, hence the name.
+> Mokujin (木人 Wooden person?) is a character in the Tekken series of fighting games. It is a spiritually sensitive animated training dummy,
+> and serves as a guardian of good against supernatural evil threats.
+> Mokujin is made of logs, hence the name.
 
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin)
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin-logback.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin-logback)
@@ -18,46 +20,53 @@
 
 
 ```clojure
-;; assuming that log4j2 or logback are on the classpath
+;; assuming that log4j2 or logback dependencies & configs are on the classpath, or you're using mokujin-logback
 (require '[mokujin.log :as log])
 
 
+;; just a message
 (log/info "hi!")
 
+;; logging exceptions
 (try
    ....
    (catch Exception e
      (log/error e "something went wrong")))
 
 
-;; pass a context map
+;; pass a context map to add structured data to the message
 (log/info "hi!" {:foo "bar" :baz "qux"})
 
-(log/with-context {"my-key" "my-value"}
-  (log/info "hi!"))
+;; context can be set 
+(log/with-context {:action "vibe-check"}
+  (log/debug "checking the vibes")
+  (let [are-you-ok? (do-the-vibe-check)]
+    (if are-you-ok?
+      (log/info "hi!")
+      (log/warn "something is up!"))))
 ```
 
 
 ### Rationalle
 
-`clojure.tools.logging` is a Good Enough :tm: solution for majority (if not all) your logging needs. It's fast, works with any
-logging backend supported on the JVM and is incredibly simple to use.
+`clojure.tools.logging` is a Good Enough :tm: solution for majority of logging needs. It's fast, works with any
+logging backend supported on the JVM and is simple to use.
 
 The only area where it falls short is producing structured logs.
 
-In the past I'd use [`logfmt`-like](https://brandur.org/logfmt) formatting style when using `infof` (and friends) to produce logs.
-Then I'd configure the log ingester (like FluentD) to parse log lines using this format. That's fine for simple cases, but as soon as
+Sidebar: In the past I'd use [`logfmt`-like](https://brandur.org/logfmt) formatting style when using `infof` (and friends) to produce logs.
+Then I'd configure the log ingester (like Fluentd) to parse log lines using this format. That's fine for simple cases, but as soon as
 exceptions and  stack traces got thrown into the mix, I fell into the deep rabbit hole of multi-line log parsers and never quite made it back.
 
 What we want instead is descriptive log messages, with the ability to attach structured data to them.
 
 This is where [Mapped Diagnostic Context (MDC)](https://logback.qos.ch/manual/mdc.html) comes in. Combined with different logging backends and appenders, we can produce easy to read logs during dev time, and emit logs as data in production.
 
-Second part of ensuring that right things are logged and we keep a good performance profile is restricting how logging is done, and what is logged:
+Second part of ensuring that right things are logged and we keep a good performance profile is restricting how logging is done, and what information is included in log events:
 
 - prohibit var-arg dispatch
-- only flat maps are allowed
-- discourage use of `printf` style logging
+- only flat maps are allowed in the log context
+- discourage use of `printf` style logging, unless strictly necessary
 
 ### How does it work?
 
@@ -70,7 +79,8 @@ Keep in mind that `infof` (and friends) variants are present, but do not support
 #### Performance
 
 While effort was made to keep things as efficient as possible, there is some impact
-introduced by manipulating the MDC object. Typical "raw" call to `clojure.tools.logging/info` is measured in nano-seconds.
+introduced by manipulating the MDC object. Typical direct call to `clojure.tools.logging/info` is measured in nano-seconds.
+
 Same call to `mokujin.log/info` will have nearly the same performance characteristics. Only when introducing several levels of MDC
 processing you can expect a small slow down but still maintain sub-microsecond performance. This is absolutely fine for
 your typical usage - most of applications running out there do a lot of I/O, where processing times are measured in milliseconds
@@ -115,7 +125,7 @@ The API is close enough that Mokujin is *almost* a drop-in replacement for `c.t.
 maintain good performance logging functions that support format strings e.g. `log/infof` or `log/errorf` **do not support the context map** as input.
 
 That's because in 99% of the cases where I'd use `log/infof` what I wanted to do was `(log/info "message" context)` instead.
-In cases where you really really want to use formatted strings and the context, this Works Just Fine :tm: :
+In cases where you really, really, really want to use formatted strings and the context, this Works Just Fine :tm: :
 
 ```clojure
 (log/with-context {:some :ctx}
@@ -142,7 +152,7 @@ This frees you up from figuring out what can and cannot be serialized by the app
 If you need to change the layout of the produced log line, you can and should defer it to the appender configuration instead.
 
 > [!WARNING]
-> Nested maps or other "rich" data types are not allowed - this is something that might change in the future.
+> Nested maps or other complex data types are not allowed - this is something that might change in the future.
 
 
 #### `with-context`
