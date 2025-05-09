@@ -14,19 +14,23 @@
   [{:keys [node]}]
   (let [sexpr (api/sexpr node)
         arg-count (count (rest sexpr))
-        [arg1 arg2 & _] (rest sexpr)]
+        [arg1 arg2 arg3] (rest sexpr)]
     (cond
       ;; error only accepts [msg], [throwable msg] [throwable msg ctx] as args, so anything more than that is not valid
-      (> arg-count 3)
-      (register! node "too many arguments passed to log/error" {:type :mokujin.log/invalid-arg-count})
+     (> arg-count 3)
+     (register! node "too many arguments passed to log/error" {:type :mokujin.log/invalid-arg-count})
 
       ;; we have two args but first is a string, indicates that 2nd arg is a context
-      (and (= arg-count 2)
-           (string? arg1))
-      (register! node "log/error doesn't accept context maps as 2nd argument!" {:type :mokujin.log/error-log-context-not-supported})
+     (and (= arg-count 2)
+          (string? arg1))
+     (register! node "log/error doesn't accept context maps as 2nd argument!" {:type :mokujin.log/error-log-context-not-supported})
 
-      (or (map? arg1) (map? arg2))
-      (register! node "log/error doesn't accept maps as log statements" {:type :mokujin.log/error-log-map-args}))))
+     (or (map? arg1) (map? arg2))
+     (register! node "log/error doesn't accept maps as log statements" {:type :mokujin.log/error-log-map-args})
+
+     (and (= arg-count 3)
+          (not (map? arg3)))
+     (register! node "context map might not be a map" {:type :mokujin.log/error-log-map-args}))))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var :redundant-ignore]}
 (defn log-args
@@ -37,9 +41,9 @@
   (let [sexpr (rest (api/sexpr node))
         [msg? ctx? & _rest?] sexpr]
     (cond
-      (>= (count sexpr) 3) (register! node "too many arguments" {:type :mokujin.log/invalid-arg-count})
-      (not (string? msg?)) (register! node "log message is not a string" {:type :mokujin.log/log-message-not-string})
-      (and (= 2 (count sexpr)) (not (map? ctx?))) (register! node "log context is not a map" {:type :mokujin.log/log-context-not-map}))))
+     (>= (count sexpr) 3) (register! node "too many arguments" {:type :mokujin.log/invalid-arg-count})
+     (not (string? msg?)) (register! node "log message is not a string" {:type :mokujin.log/log-message-not-string})
+     (and (= 2 (count sexpr)) (not (map? ctx?))) (register! node "log context is not a map" {:type :mokujin.log/log-context-not-map}))))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var :redundant-ignore]}
 (defn logf-args
@@ -50,11 +54,11 @@
         arg-count (count (rest sexpr))
         [arg1 _arg2 & _] (rest sexpr)]
     (cond
-      (= arg-count 1)
-      (register! node "too few arguments passed to logf" {:type :mokujin.log/invalid-arg-count})
+     (= arg-count 1)
+     (register! node "too few arguments passed to logf" {:type :mokujin.log/invalid-arg-count})
 
-      (not (string? arg1))
-      (register! node "log message is not a string" {:type :mokujin.log/log-message-not-string}))))
+     (not (string? arg1))
+     (register! node "log message is not a string" {:type :mokujin.log/log-message-not-string}))))
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var]}
 (defn log-errof-args
@@ -64,15 +68,15 @@
         arg-count (count (rest sexpr))
         [arg1 arg2 & _] (rest sexpr)]
     (cond
-      (= arg-count 1)
-      (register! node "too few arguments passed to errorf" {:type :mokujin.log/invalid-arg-count})
+     (= arg-count 1)
+     (register! node "too few arguments passed to errorf" {:type :mokujin.log/invalid-arg-count})
 
-      (and
-        (= arg-count 2)
-        (not (string? arg1)))
-      (register! node "too few arguments passed to errorf" {:type :mokujin.log/invalid-arg-count})
+     (and
+      (= arg-count 2)
+      (not (string? arg1)))
+     (register! node "too few arguments passed to errorf" {:type :mokujin.log/invalid-arg-count})
 
-      (and (>= arg-count 3)
-           (not (string? arg1))
-           (not (string? arg2)))
-      (register! node (format "log message is not a string %s" [arg1 arg2]) {:type :mokujin.log/log-message-not-string}))))
+     (and (>= arg-count 3)
+          (not (string? arg1))
+          (not (string? arg2)))
+     (register! node (format "log message is not a string %s" [arg1 arg2]) {:type :mokujin.log/log-message-not-string}))))

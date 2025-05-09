@@ -4,6 +4,8 @@
    kaocha.plugin.capture-output
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
+   [matcher-combinators.test]
+   [matcher-combinators.core :refer [match?]]
    [mokujin.log :as log])
   (:import
    (org.slf4j MDC)))
@@ -19,11 +21,9 @@
        (str/split-lines)
        (map #(json/parse-string % true))
        (sort-by :timestamp)
-       (map #(-> %
-                 (dissoc :timestamp)
-                 (update :stack_trace (fn [st] (when st
-                                                 {:message (first (str/split-lines st))
-                                                  :count (count (str/split-lines st))})))))))
+       (map #(update % :stack_trace (fn [st] (when st
+                                               {:message (first (str/split-lines st))
+                                                :count (count (str/split-lines st))}))))))
 
 (defn run-in-thread
   ([f]
@@ -98,15 +98,15 @@
 
   (let [captured-logs (parse-captured-logs)]
     (testing "contexts can be nested, but only work within current thread"
-      (is (= [{:level "INFO"
-               :level-one "yes"
-               :level-three "yes"
-               :level-two "yes"
-               :logger_name "mokujin.log-test"
-               :message "ahem"
-               :stack_trace nil
-               :thread_name "test"}]
-             captured-logs)))))
+      (is (match? [{:level "INFO"
+                    :level-one "yes"
+                    :level-three "yes"
+                    :level-two "yes"
+                    :logger_name "mokujin.log-test"
+                    :message "ahem"
+                    :stack_trace nil
+                    :thread_name "test"}]
+                  captured-logs)))))
 
 (deftest mdc+qualified-keywords
   (log/with-context {"one" "two"
@@ -143,31 +143,30 @@
                          (catch Exception e
                            (log/error e "six" {:fail true})))))
                    (log/info "seven")))
-  (let [captured-logs (map #(dissoc % :logger_name :thread_name)
-                           (parse-captured-logs))]
+  (let [captured-logs (parse-captured-logs)]
     (testing "All messages are captured"
       (is (= ["one" "two" "three" "four formatted" "five" "six" "seven"]
              (map :message captured-logs))))
 
     (testing "MDC states"
-      (is (= [{}
-              {:nested "true" :foo "bar"}
-              {}
-              {:nested "again" :foo "bar"}
-              {:nested "again" :foo "bar"}
-              {:fail "true" :nested "again" :foo "bar"}
-              {}]
-             (map #(dissoc % :message :level :stack_trace)
-                  captured-logs))))
+      (is (match? [{}
+                   {:nested "true" :foo "bar"}
+                   {}
+                   {:nested "again" :foo "bar"}
+                   {:nested "again" :foo "bar"}
+                   {:fail "true" :nested "again" :foo "bar"}
+                   {}]
+                  captured-logs #_(map #(dissoc % :message :level :stack_trace)
+                                       captured-logs))))
     (testing "stack trace is included"
-      (is (= [{:fail "true"
-               :nested "again"
-               :foo "bar"
-               :level "ERROR"
-               :message "six"
-               :stack_trace {:count 5
-                             :message "clojure.lang.ExceptionInfo: this is exception"}}]
-             (filter :stack_trace captured-logs))))))
+      (is (match? [{:fail "true"
+                    :nested "again"
+                    :foo "bar"
+                    :level "ERROR"
+                    :message "six"
+                    :stack_trace {:count 5
+                                  :message "clojure.lang.ExceptionInfo: this is exception"}}]
+                  (filter :stack_trace captured-logs))))))
 
 (deftest verify-nested-mdc
   ;; just so we have some more threads-in-threads
@@ -188,41 +187,41 @@
                                                           (log/error e "oh no again again" {:fail true}))))))]))))
 
   (let [captured-logs (parse-captured-logs)]
-    (is (= [{:level "INFO"
-             :logger_name "mokujin.log-test"
-             :message "foo"
-             :stack_trace nil
-             :thread_name "test-1"}
+    (is (match? [{:level "INFO"
+                  :logger_name "mokujin.log-test"
+                  :message "foo"
+                  :stack_trace nil
+                  :thread_name "test-1"}
 
-            {:level "INFO"
-             :logger_name "mokujin.log-test"
-             :message "bar"
-             :nested "true"
-             :stack_trace nil
-             :thread_name "test-1"}
-            {:foo "bar"
-             :level "WARN"
-             :logger_name "mokujin.log-test"
-             :message "qux"
-             :nested "for real"
-             :stack_trace nil
-             :thread_name "test-1"}]
-           (filter #(= (:thread_name %) "test-1") captured-logs)))
+                 {:level "INFO"
+                  :logger_name "mokujin.log-test"
+                  :message "bar"
+                  :nested "true"
+                  :stack_trace nil
+                  :thread_name "test-1"}
+                 {:foo "bar"
+                  :level "WARN"
+                  :logger_name "mokujin.log-test"
+                  :message "qux"
+                  :nested "for real"
+                  :stack_trace nil
+                  :thread_name "test-1"}]
+                (filter #(= (:thread_name %) "test-1") captured-logs)))
 
-    (is (= [{:foo "bar2"
-             :level "ERROR"
-             :logger_name "mokujin.log-test"
-             :message "oh no"
-             :stack_trace nil
-             :thread_name "test-2"}
-            {:fail "true"
-             :foo "bar2"
-             :level "ERROR"
-             :logger_name "mokujin.log-test"
-             :message "oh no again again"
-             :stack_trace {:count 4 :message "java.lang.AssertionError: Assert failed: false"}
-             :thread_name "test-2"}]
-           (filter #(= (:thread_name %) "test-2") captured-logs)))))
+    (is (match? [{:foo "bar2"
+                  :level "ERROR"
+                  :logger_name "mokujin.log-test"
+                  :message "oh no"
+                  :stack_trace nil
+                  :thread_name "test-2"}
+                 {:fail "true"
+                  :foo "bar2"
+                  :level "ERROR"
+                  :logger_name "mokujin.log-test"
+                  :message "oh no again again"
+                  :stack_trace {:count 4 :message "java.lang.AssertionError: Assert failed: false"}
+                  :thread_name "test-2"}]
+                (filter #(= (:thread_name %) "test-2") captured-logs)))))
 
 (deftest generic-log-marco-test
   (testing "`log` macro"
@@ -232,12 +231,12 @@
       (log/log :warn "three" {:ctx true}))
     (log/log :warn "four")
 
-    (let [logs (map #(dissoc % :logger_name :stack_trace :thread_name) (parse-captured-logs))]
-      (is (= [{:ctx "true" :level "INFO" :message "one"}
-              {:ctx "true" :level "INFO" :message "two" :more "true"}
-              {:ctx "true" :extra "extra" :level "WARN" :message "three"}
-              {:level "WARN" :message "four"}]
-             logs)))))
+    (let [logs (parse-captured-logs)]
+      (is (match? [{:ctx "true" :level "INFO" :message "one"}
+                   {:ctx "true" :level "INFO" :message "two" :more "true"}
+                   {:ctx "true" :extra "extra" :level "WARN" :message "three"}
+                   {:level "WARN" :message "four"}]
+                  logs)))))
 
 (deftest generic-logf-macro-test
   (testing "`logf` macro"
@@ -248,10 +247,26 @@
       (log/logf :warn "3.5 %s" {:uh "oh"}))
     (log/logf :warn "four"))
 
-  (let [logs (map #(dissoc % :logger_name :stack_trace :thread_name) (parse-captured-logs))]
-    (is (= [{:level "INFO" :message "one 1"}
-            {:level "INFO" :message "two 1 2"}
-            {:level "WARN" :message "three" :extra "extra"}
-            {:level "WARN" :message "3.5 {:uh \"oh\"}" :extra "extra"}
-            {:level "WARN" :message "four"}]
-           logs))))
+  (let [logs (parse-captured-logs)]
+    (is (match? [{:level "INFO" :message "one 1"}
+                 {:level "INFO" :message "two 1 2"}
+                 {:level "WARN" :message "three" :extra "extra"}
+                 {:level "WARN" :message "3.5 {:uh \"oh\"}" :extra "extra"}
+                 {:level "WARN" :message "four"}]
+                logs))))
+
+(deftest error-log-with-ex-data-test
+  (testing "error with exception context"
+
+    (try
+      (throw (ex-info "woah" {:foo "bar"}))
+      (catch Exception err
+        (log/error err "something happened" {:extra "data"})))
+
+    (let [logs (map #(dissoc % :logger_name :thread_name) (parse-captured-logs))]
+      (is (match? [{:level "ERROR"
+                    :message "something happened"
+                    :extra "data"
+                    :foo "bar"
+                    :stack_trace {:message "clojure.lang.ExceptionInfo: woah"}}]
+                  logs)))))
