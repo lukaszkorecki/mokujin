@@ -21,7 +21,8 @@
   (testing "other data types"
     (is (= {"a" "1"} (ctx.fmt/stringify {:a 1})))
     (is (= {"a" "true"} (ctx.fmt/stringify {:a true})))
-    (is (= {"a" ""} (ctx.fmt/stringify {:a nil})))
+    (is (= {"a" "null"} (ctx.fmt/stringify {:a nil})))
+    (is (= {"t" "true" "f" "false"} (ctx.fmt/stringify {:t true :f false })))
     (is (= {"a" "Sun Oct 01 12:00:00 UTC 2023"}
            (ctx.fmt/stringify {:a #inst "2023-10-01T12:00:00Z"})))
 

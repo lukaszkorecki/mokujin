@@ -37,7 +37,7 @@
 ;; pass a context map to add structured data to the message
 (log/info "hi!" {:foo "bar" :baz "qux"})
 
-;; context can be set 
+;; context can be set
 (log/with-context {:action "vibe-check"}
   (log/debug "checking the vibes")
   (let [are-you-ok? (do-the-vibe-check)]
@@ -70,7 +70,7 @@ Second part of ensuring that right things are logged and we keep a good performa
 
 ### How does it work?
 
-Mokujin wraps `clojure.tools.logging` and injects SLF4J's MDC into logging events, if provided. 
+Mokujin wraps `clojure.tools.logging` and injects SLF4J's MDC into logging events, if provided.
 Keep in mind that `infof` (and friends) variants are present, but do not support passing the MDC (more on that later).
 
 
@@ -84,13 +84,13 @@ processing you can expect a small slow down but still maintain sub-microsecond p
 your typical usage - most of applications running out there do a lot of I/O, where processing times are measured in milliseconds
 or seconds even, so any overhead introduced by logging is negligble.
 
-You can run the benchmark via `clj -M:benchmark`. Latest results (as of 30/03/2025) run on my M4 MBP Pro are:
+You can run the benchmark via `clj -M:benchmark`. Latest results (as of 19/08/2025) run on my M4 MBP Pro + Java 24 + Clojure 1.12.1:
 
 ```
-#'mokujin.log-bench/mokujin-log : 76.876114 ns
-#'mokujin.log-bench/mokujin-log+context : 346.391248 ns
-#'mokujin.log-bench/tools-logging-log : 78.078607 ns
-#'mokujin.log-bench/tools-logging-log+context : 221.394879 ns
+#'mokujin.log-bench/mokujin-log : 38.617807 ns
+#'mokujin.log-bench/mokujin-log+context : 182.073844 ns
+#'mokujin.log-bench/tools-logging-log : 39.924598 ns
+#'mokujin.log-bench/tools-logging-log+context : 104.985398 ns
 ```
 
 > [!NOTE]
@@ -138,7 +138,7 @@ Second difference is that only 1- and 2-arity (or in case of `log/error` 3-arity
 (log/info "hello" "there" "world")
 ```
 
-To help with migration and good log hygine Mokujin ships with custom hooks for `clj-kondo` and 
+To help with migration and good log hygine Mokujin ships with custom hooks for `clj-kondo` and
 report warnings in case of suspicious or incompatible call styles are detected.
 
 

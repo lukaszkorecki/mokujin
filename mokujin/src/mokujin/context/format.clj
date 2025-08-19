@@ -1,19 +1,23 @@
 (ns mokujin.context.format
   (:refer-clojure :exclude [flatten])
   (:require [clojure.string :as str]))
+(set! *warn-on-reflection* true)
+
+(def ^:private l {nil "null" false "false"})
 
 (defn- ->str
   [val] ^String
-  (if val
-    (if (keyword? val)
-      ;; all of these are quite slow
-      #_(.replaceAll ^String (.getName ^clojure.lang.Keyword val) "-" "_")
-      #_(.replaceAll ^String (str (symbol val)) "-" "_")
-      #_(.getName ^clojure.lang.Keyword val)
-      ;; fastest way to get a fully-quallified keyword as a string
-      (str (symbol val))
-      (.toString ^Object val))
-    ""))
+  (case val
+    nil "null"
+    false "false"
+    #_else (if (keyword? val)
+             ;; all of these are quite slow
+             #_(.replaceAll ^String (.getName ^clojure.lang.Keyword val) "-" "_")
+             #_(.replaceAll ^String (str (symbol val)) "-" "_")
+             #_(.getName ^clojure.lang.Keyword val)
+             ;; fastest way to get a fully-quallified keyword as a string
+             (str (symbol val))
+             (Object/.toString val))))
 
 (defn stringify
   "Given context map `ctx`, returns a new map with all keys and values converted to strings,
