@@ -16,7 +16,7 @@ jobs:
       image: clojure:openjdk-17-tools-deps-slim-buster
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
 
     - name: Cache Clojure deps
       uses: actions/cache@v4
