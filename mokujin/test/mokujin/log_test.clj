@@ -4,7 +4,8 @@
    kaocha.plugin.capture-output
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [mokujin.log :as log])
+   [mokujin.log :as log]
+   [mokujin.context.format :as ctx.fmt])
   (:import
    (org.slf4j MDC)))
 
@@ -123,7 +124,7 @@
   (log/with-context {:foo nil :aha "" :hello "there"}
     (log/info "ahem")
     (is (= {"aha" ""
-            "foo" ""
+            "foo" "null"
             "hello" "there"}
            (log/current-context)))))
 
@@ -254,4 +255,28 @@
             {:level "WARN" :message "three" :extra "extra"}
             {:level "WARN" :message "3.5 {:uh \"oh\"}" :extra "extra"}
             {:level "WARN" :message "four"}]
+           logs))))
+
+(deftest rebinding-context-formatter
+  (binding [log/*context-formatter* ctx.fmt/flatten]
+    (log/info "hello" {:some "context"})
+    (log/info "no context")
+    (log/with-context {"some" "ctx" :x [{:foo "bar"} {:bar "baz"}]}
+      (log/with-context {:nested "true"}
+        (log/warn "hello")
+        (log/infof "hello %s" "world")
+        (log/info "nested"))
+      (log/error (ex-info "oh no" {:exc :data}) "oh no" {:error "yes"})))
+  (let [logs (map #(dissoc % :logger_name :stack_trace :thread_name) (parse-captured-logs))]
+    (is (= [{:level "INFO" :message "hello" :some "context"}
+            {:level "INFO" :message "no context"}
+            {:level "WARN" :message "hello" :nested "true" :some "ctx" :x.0.foo "bar" :x.1.bar "baz"}
+            {:level "INFO"
+             :message "hello world"
+             :nested "true"
+             :some "ctx"
+             :x.0.foo "bar"
+             :x.1.bar "baz"}
+            {:level "INFO" :message "nested" :nested "true" :some "ctx" :x.0.foo "bar" :x.1.bar "baz"}
+            {:error "yes" :level "ERROR" :message "oh no" :some "ctx" :x.0.foo "bar" :x.1.bar "baz"}]
            logs))))

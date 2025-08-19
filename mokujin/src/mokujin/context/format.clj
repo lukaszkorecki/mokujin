@@ -1,6 +1,7 @@
 (ns mokujin.context.format
   (:refer-clojure :exclude [flatten])
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [clojure.walk :as walk]))
 (set! *warn-on-reflection* true)
 
 (def ^:private l {nil "null" false "false"})
@@ -30,27 +31,50 @@
               (transient {})
               ctx)))
 
-(defn flatten
+;;;;;
+
+(defn- join-path [segments]
+  (str/join "." segments))
+
+(defn- flatten-context
   "Given a context map it will 'flatten' it, i.e. convert all nested maps and collections into a single map and
   keys will be strings with dot notation, e.g. `:a.b.c` for nested map `{:a {:b {:c 1}}}`.
 
   Collections will be addressed by key paths with indexes eg `:a.0.b.c` for `{:a [{:b {:c 1}}]}`.
 
   NOTE: this is quite slower than default `stringify` formatter. Use it only if you can take the perf hit and
-  still have addressable context map keys. "
-  [ctx]
+  still have addressable context map keys.
 
-  (letfn [(flatten-impl [m prefix]
-            (reduce-kv (fn [acc k v]
-                         (let [new-key (if prefix
-                                         (str prefix "." (->str k))
-                                         (->str k))]
-                           (cond
-                             (map? v) (merge acc (flatten-impl v new-key))
-                             (coll? v) (reduce-kv
-                                        (fn [a i e] (merge a {(str new-key "." i) e}))
-                                        acc v)
-                             :else (assoc acc new-key v))))
-                       {}
-                       m))]
-    (flatten-impl ctx nil)))
+  Values will be stringified just like in stringify formatter.
+
+  Example:
+  { :a { :b 1
+         :c [2 3]
+         :d {:e 4} }
+    :f \"string\"  => { \"a.b\" \"1\"
+                       \"a.c.0\" \"2\"
+                       \"a.c.1\" \"3\"
+                       \"a.d.e\" \"4\"
+                       \"f\" \"string\" }
+  "
+
+  [ctx path acc]
+  (cond
+    (map? ctx) (reduce-kv
+                (fn [m k v]
+                  (flatten-context v (conj path (->str k)) m))
+                acc
+                ctx)
+
+    (sequential? ctx) (reduce-kv
+                       (fn [m i v]
+                         (flatten-context v (conj path (str i)) m))
+                       acc
+                       (vec ctx)) ; ensure indexed for lists/lazy seqs
+
+    :else (let [k (join-path path)
+                v (->str ctx)]
+            (assoc! acc k v))))
+
+(defn flatten [ctx]
+  (persistent! (flatten-context ctx [] (transient {}))))
