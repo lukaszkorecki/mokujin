@@ -1,36 +1,17 @@
 (ns mokujin.log
   (:require
-   [clojure.tools.logging :as log])
+   [clojure.tools.logging :as log]
+   [mokujin.context.format :as ctx.fmt])
   (:import
    (org.slf4j MDC)))
 
-(defn- ->str
-  [val] ^String
-  (if val
-    (if (keyword? val)
-      ;; all of these are quite slow
-      #_(.replaceAll ^String (.getName ^clojure.lang.Keyword val) "-" "_")
-      #_(.replaceAll ^String (str (symbol val)) "-" "_")
-      #_(.getName ^clojure.lang.Keyword val)
-      ;; fastest way to get a fully-quallified keyword as a string
-      (str (symbol val))
-      (.toString ^Object val))
-    ""))
+(def ^:dynamic *context-formatter* ctx.fmt/stringify)
 
-;; TODO: add context-sanitizer dynamic var to use it to remove or redact specific keys and values from the context map
-;;       or see if this is something that can be pushed down to Logback
-(defn- format-context [ctx]
-  (persistent!
-    (reduce-kv (fn [m k v]
-                 (assoc! m (->str k) (->str v)))
-               (transient {})
-               ctx)))
-
-;; TODO: use binding for the context?
+;; TODO: use binding for context?
 (defn mdc-put
   "Take a context map and put it into the MDC. Keys and values will be stringified."
   [ctx]
-  (doseq [[k v] (format-context ctx)]
+  (doseq [[k v] (*context-formatter* ctx)]
     (MDC/put ^String k ^String v)))
 
 (defmacro with-context
@@ -117,7 +98,7 @@
   ([exc msg ctx]
    (with-meta
      `(with-context ~ctx #_(merge ~ctx (ex-data ~exc)) ;; XXX: should we merge ex-data here?
-        (log/log :error ~exc ~msg))
+                    (log/log :error ~exc ~msg))
      (meta &form))))
 
 ;; TODO: create a deflog macro which reduces duplication above ^^^^
