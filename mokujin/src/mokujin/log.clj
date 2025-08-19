@@ -5,7 +5,23 @@
   (:import
    (org.slf4j MDC)))
 
+(set! *warn-on-reflection* true)
+
 (def ^:dynamic *context-formatter* ctx.fmt/stringify)
+
+(def formatters
+  {::default ctx.fmt/stringify
+   ::stringify ctx.fmt/stringify
+   ::flatten ctx.fmt/flatten})
+
+(defn set-context-formatter!
+  "Set the context formatter to use for `with-context` and `mdc-put`.
+  The formatter should be a function that takes a context map and returns a new map with stringified keys and values."
+  [formatter]
+  (if-let [fmt (formatters formatter)]
+    (alter-var-root #'*context-formatter* (constantly fmt))
+    (throw (IllegalArgumentException.
+            (str "Unknown context formatter: " formatter " Valid options are: " (keys formatters))))))
 
 ;; TODO: use binding for context?
 (defn mdc-put

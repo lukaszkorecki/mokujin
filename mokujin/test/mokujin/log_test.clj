@@ -3,13 +3,18 @@
    [cheshire.core :as json]
    kaocha.plugin.capture-output
    [clojure.string :as str]
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [deftest is testing use-fixtures]]
    [mokujin.log :as log]
    [mokujin.context.format :as ctx.fmt])
   (:import
    (org.slf4j MDC)))
 
 (set! *warn-on-reflection* true)
+
+(use-fixtures :each
+  (fn [test]
+    (log/set-context-formatter! ::log/stringify)
+    (test)))
 
 (defn- parse-captured-logs
   "Hooks into Kaocha's capture-output plugin to parse the logs. Easier than digging into the clojure.toools.logging internals."
@@ -258,15 +263,15 @@
            logs))))
 
 (deftest rebinding-context-formatter
-  (binding [log/*context-formatter* ctx.fmt/flatten]
-    (log/info "hello" {:some "context"})
-    (log/info "no context")
-    (log/with-context {"some" "ctx" :x [{:foo "bar"} {:bar "baz"}]}
-      (log/with-context {:nested "true"}
-        (log/warn "hello")
-        (log/infof "hello %s" "world")
-        (log/info "nested"))
-      (log/error (ex-info "oh no" {:exc :data}) "oh no" {:error "yes"})))
+  (log/set-context-formatter! ::log/flatten)
+  (log/info "hello" {:some "context"})
+  (log/info "no context")
+  (log/with-context {"some" "ctx" :x [{:foo "bar"} {:bar "baz"}]}
+    (log/with-context {:nested "true"}
+      (log/warn "hello")
+      (log/infof "hello %s" "world")
+      (log/info "nested"))
+    (log/error (ex-info "oh no" {:exc :data}) "oh no" {:error "yes"}))
   (let [logs (map #(dissoc % :logger_name :stack_trace :thread_name) (parse-captured-logs))]
     (is (= [{:level "INFO" :message "hello" :some "context"}
             {:level "INFO" :message "no context"}
