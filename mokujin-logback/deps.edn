@@ -17,6 +17,6 @@
 
            :run-tests {:main-opts ["-m" "kaocha.runner"]}
 
-           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.8"}
+           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.10"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
                    :ns-default build}}}
