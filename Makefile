@@ -22,16 +22,16 @@ publish: clean jar
 
 
 update-deps:
-	clj -M:dev/outdated
+	$(foreach lib,$(LIB),cd $(lib) && clj -M:dev/outdated && cd -;)
 
 test-all: test-core test-logback test-ex-logback test-ex-log4j2
 	@echo "all done"
 
 test-core:
-	cd mokujin && clj -M:dev:test
+	cd mokujin && clj -M:dev:test:run-tests
 
 test-logback:
-	cd mokujin-logback & clj -M:dev:test
+	cd mokujin-logback & clj -M:dev:test:run-tests
 
 test-ex-logback:
 	cd examples/logback && clj -M:run
@@ -44,4 +44,4 @@ benchmark:
 
 
 help:
-	@grep -E '^[a-z]+:' ./Makefile
+	@grep -E '^[a-z\-]+:' ./Makefile

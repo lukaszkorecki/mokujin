@@ -48,54 +48,33 @@
   []
   (into {} (MDC/getCopyOfContextMap)))
 
-(defmacro info
-  "Log an info pass message or ctx+messag"
-  ([msg]
-   (with-meta
-     `(log/log :info ~msg)
-     (meta &form)))
-  ([msg ctx]
-   (with-meta
-     `(with-context ~ctx
-        (log/log :info ~msg))
-     (meta &form))))
+(defmacro ^:private deflogger
+  "This macro is used internally to only define normal namespace-based level loggers."
+  [level-sym]
+  (let [level-key (keyword level-sym)
+        level-doc (str "Similar to clojure.tools.logging/" level-sym ". but with optional MDC context arg.")
+        arglists ''([msg] [msg context])]
+    `(defmacro ~level-sym
+       ~level-doc
+       {:arglists ~arglists}
+       ([msg#]
+        (with-meta
+          `(log/log ~~level-key ~msg#)
+          ~'(meta &form)))
+       ([msg# ctx#]
+        (with-meta
+          `(with-context ~ctx#
+             (log/log ~~level-key ~msg#))
+          ~'(meta &form))))))
 
-(defmacro warn
-  "Log a warning pass message or ctx+message"
-  ([msg]
-   (with-meta
-     `(log/log :warn ~msg)
-     (meta &form)))
-  ([msg ctx]
-   (with-meta
-     `(with-context ~ctx
-        (log/log :warn ~msg))
-     (meta &form))))
+(declare info warn debug trace error)
 
-(defmacro debug
-  "Debug log, pass message or ctx+message"
-  ([msg]
-   (with-meta
-     `(log/log :debug ~msg)
-     (meta &form)))
-  ([msg ctx]
-   (with-meta
-     `(with-context ~ctx
-        (log/log :debug ~msg))
-     (meta &form))))
+(deflogger info)
+(deflogger warn)
+(deflogger debug)
+(deflogger trace)
 
-(defmacro trace
-  "Trace log, pass message or ctx+message"
-  ([msg]
-   (with-meta
-     `(log/log :trace ~msg)
-     (meta &form)))
-  ([msg ctx]
-   (with-meta
-     `(with-context ~ctx
-        (log/log :trace ~msg))
-     (meta &form))))
-
+;; Error is a special case because it handles throwables
 (defmacro error
   "Log an error message.
   [msg]
@@ -113,41 +92,40 @@
      (meta &form)))
   ([exc msg ctx]
    (with-meta
-     `(with-context ~ctx #_(merge ~ctx (ex-data ~exc)) ;; XXX: should we merge ex-data here?
-                    (log/log :error ~exc ~msg))
+     `(with-context ~ctx
+        (log/log :error ~exc ~msg))
      (meta &form))))
 
-;; TODO: create a deflog macro which reduces duplication above ^^^^
+;; <level>f macros are used for formatted messages, they do not support context maps
+(declare infof warnf debugf tracef errorf)
 
-;; See how Cambium did it: https://github.com/cambium-clojure/cambium.core/blob/31a67a6ea2dd54ed9497873af7bb17a8213f8d37/src/cambium/core.clj#L158C1-L171C112
+(def ^:private f-sym->level-kw
+  "Map of format symbols to log levels"
+  {'infof :info
+   'warnf :warn
+   'debugf :debug
+   'tracef :trace
+   'errorf :error})
 
-;; re-export infof/errorf/warnf/debugf for convenience,
-;; API is unchanged  - as in, context map is not supported
-;; TODO: we could destructure last arg to be a context map, but what if somebody passes something that shouldn't be in the context?
-(defmacro infof [& args]
-  (with-meta
-    `(log/logf :info ~@args)
-    (meta &form)))
+(defmacro ^:private defloggerf
+  "This macro is used internally to only define normal namespace-based level loggers."
+  [level-sym]
+  (let [level-key (get f-sym->level-kw level-sym)
+        level-doc (str "Same as clojure.tools.logging/" level-sym ".")
+        arglists ''([msg & args])]
+    `(defmacro ~level-sym
+       ~level-doc
+       {:arglists ~arglists}
+       [& msg#]
+       (with-meta
+         `(log/logf ~~level-key ~@msg#)
+         ~'(meta &form)))))
 
-(defmacro warnf [& args]
-  (with-meta
-    `(log/logf :warn ~@args)
-    (meta &form)))
-
-(defmacro errorf [& args]
-  (with-meta
-    `(log/logf :error ~@args)
-    (meta &form)))
-
-(defmacro debugf [& args]
-  (with-meta
-    `(log/logf :debug ~@args)
-    (meta &form)))
-
-(defmacro tracef [& args]
-  (with-meta
-    `(log/logf :trace ~@args)
-    (meta &form)))
+(defloggerf infof)
+(defloggerf warnf)
+(defloggerf errorf)
+(defloggerf debugf)
+(defloggerf tracef)
 
 ;; Re-export generic log functions but with context support
 ;; NOTE: these are SLOWER than dedicated log macros

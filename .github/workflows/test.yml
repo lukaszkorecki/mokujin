@@ -25,12 +25,12 @@ jobs:
         key: v1-deps-${{ hashFiles('./mokujin/deps.edn') }}-${{ hashFiles('./mokujin-logback/deps.edn') }}
 
     - name: Run core tests
-      run: cd mokujin && clj -M:dev:test
+      run: cd mokujin && clj -M:dev:test:run-tests
       env:
         TZ: UTC
 
     - name: Run logback extensions tests
-      run: cd mokujin-logback && clj -M:dev:test
+      run: cd mokujin-logback && clj -M:dev:test:run-tests
 
     - name: Verify logback example
       run: cd examples/logback && clj -M:run
