@@ -95,7 +95,7 @@
      (meta &form)))
   ([exc msg ctx]
    (with-meta
-     `(with-context (merge ~ctx (ex-data ~exc))
+     `(with-context ~ctx
         (log/log :error ~exc ~msg))
      (meta &form))))
 

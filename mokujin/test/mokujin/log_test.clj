@@ -254,19 +254,3 @@
                  {:level "WARN" :message "3.5 {:uh \"oh\"}" :extra "extra"}
                  {:level "WARN" :message "four"}]
                 logs))))
-
-(deftest error-log-with-ex-data-test
-  (testing "error with exception context"
-
-    (try
-      (throw (ex-info "woah" {:foo "bar"}))
-      (catch Exception err
-        (log/error err "something happened" {:extra "data"})))
-
-    (let [logs (map #(dissoc % :logger_name :thread_name) (parse-captured-logs))]
-      (is (match? [{:level "ERROR"
-                    :message "something happened"
-                    :extra "data"
-                    :foo "bar"
-                    :stack_trace {:message "clojure.lang.ExceptionInfo: woah"}}]
-                  logs)))))
