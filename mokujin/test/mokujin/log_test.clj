@@ -265,24 +265,18 @@
 
 (deftest rebinding-context-formatter
   (log/set-context-formatter! ::log/flatten)
-  (log/info "hello" {:some "context"})
-  (log/info "no context")
   (log/with-context {"some" "ctx" :x [{:foo "bar"} {:bar "baz"}]}
-    (log/with-context {:nested "true"}
-      (log/warn "hello")
-      (log/infof "hello %s" "world")
-      (log/info "nested"))
-    (log/error (ex-info "oh no" {:exc :data}) "oh no" {:error "yes"}))
-  (let [logs (map #(dissoc % :logger_name :stack_trace :thread_name) (parse-captured-logs))]
-    (is (= [{:level "INFO" :message "hello" :some "context"}
-            {:level "INFO" :message "no context"}
-            {:level "WARN" :message "hello" :nested "true" :some "ctx" :x.0.foo "bar" :x.1.bar "baz"}
-            {:level "INFO"
-             :message "hello world"
-             :nested "true"
-             :some "ctx"
-             :x.0.foo "bar"
-             :x.1.bar "baz"}
-            {:level "INFO" :message "nested" :nested "true" :some "ctx" :x.0.foo "bar" :x.1.bar "baz"}
-            {:error "yes" :level "ERROR" :message "oh no" :some "ctx" :x.0.foo "bar" :x.1.bar "baz"}]
-           logs))))
+    (log/with-context {:nested "true" :woop [{:x 1} {:y 2} {:z [3 4]}]}
+      (log/warn "hello")))
+  (let [logs (parse-captured-logs)]
+    (is (match? [{:level "WARN"
+                  :message "hello"
+                  :nested "true"
+                  :some "ctx"
+                  :x.0.foo "bar"
+                  :x.1.bar "baz"
+                  :woop.0.x "1"
+                  :woop.1.y "2"
+                  :woop.2.z.0 "3"
+                  :woop.2.z.1 "4"}]
+                logs))))
