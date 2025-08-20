@@ -24,11 +24,13 @@
             (str "Unknown context formatter: " formatter " Valid options are: " (keys formatters))))))
 
 ;; TODO: use binding for context?
+
+(defn- p! [_ k v] (MDC/put ^String k ^String v))
+
 (defn mdc-put
   "Take a context map and put it into the MDC. Keys and values will be stringified."
   [ctx]
-  (doseq [[k v] (*context-formatter* ctx)]
-    (MDC/put ^String k ^String v)))
+  (reduce-kv p! {} (*context-formatter* ctx)))
 
 (defmacro with-context
   "Set  context map for the form. Ideally, the context map should use unqualified keywords or strings for keys.
@@ -138,16 +140,16 @@
   ([level msg context?]
    (with-meta
      `(cond
-        (and (string? ~msg)
-             (map? ~context?)) (with-context ~context?
-                                 (log/log ~level ~msg))
+       (and (string? ~msg)
+            (map? ~context?)) (with-context ~context?
+                                (log/log ~level ~msg))
 
-        (and (string? ~msg)
-             (not (map? ~context?))) (log/log ~level ~msg))
+       (and (string? ~msg)
+            (not (map? ~context?))) (log/log ~level ~msg))
      (meta &form))))
 
 (defmacro logf
-  "Log wrapper which is helpful if you need to programatically control the log level."
+  "Logf wrapper which is helpful if you need to programatically control the log level."
   [level msg & args]
   (with-meta
     `(log/logf ~level ~msg ~@args)
