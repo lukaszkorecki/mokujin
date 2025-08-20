@@ -51,7 +51,16 @@
            (ctx.fmt/flatten {:a [{:b "c"} {:d {:e "f"}}]})))
 
     (is (= {"a.0.b.c" "d" "a.1.e.f.g" "h"}
-           (ctx.fmt/flatten {:a [{:b {:c "d"}} {:e {:f {:g "h"}}}]}))))
+           (ctx.fmt/flatten {:a [{:b {:c "d"}} {:e {:f {:g "h"}}}]})))
+
+    (is (= {"x.0.foo" "bar"
+            "x.1.bar" "baz"
+            "woop.0.x" "1"
+            "woop.1.y" "2"
+            "woop.2.z.0" "3"
+            "woop.2.z.1" "4"}
+           (ctx.fmt/flatten {:x [{:foo "bar"} {:bar "baz"}]
+                             :woop [{:x 1} {:y 2} {:z [3 4]}]}))))
 
   (testing "edge case with sets - these won't be handled"
     (is (= {"a" (pr-str #{1 2 3})}

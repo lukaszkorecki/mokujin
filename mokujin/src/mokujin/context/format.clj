@@ -35,9 +35,6 @@
 
 ;;;;;
 
-(defn- join-path [segments]
-  (str/join "." segments))
-
 (defn- flatten-context
   "Given a context map it will 'flatten' it, i.e. convert all nested maps and collections into a single map and
   keys will be strings with dot notation, e.g. `:a.b.c` for nested map `{:a {:b {:c 1}}}`.
@@ -64,19 +61,26 @@
   (cond
     (map? ctx) (reduce-kv
                 (fn [m k v]
-                  (flatten-context v (conj path (->str k)) m))
+                  (flatten-context v (conj path k) m))
                 acc
                 ctx)
 
     (sequential? ctx) (reduce-kv
-                       (fn [m i v]
-                         (flatten-context v (conj path (str i)) m))
+                       (fn [m idx v]
+                         (flatten-context v (conj path idx) m))
                        acc
                        (vec ctx)) ; ensure indexed for lists/lazy seqs
 
-    :else (let [k (join-path path)
-                v (->str ctx)]
-            (assoc! acc k v))))
+    :else (let [v (->str ctx)]
+            (assoc! acc path ctx))))
+
+(defn- join-path [segments]
+  (->> segments
+       (map ->str) ; ensure all segments are strings
+       (str/join ".")))
 
 (defn flatten [ctx]
-  (persistent! (flatten-context ctx [] (transient {}))))
+  (-> (flatten-context ctx [] (transient {}))
+      (persistent!)
+      (update-keys join-path)
+      (update-vals ->str)))
