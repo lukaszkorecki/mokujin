@@ -3,6 +3,9 @@
    [cheshire.core :as json]
    kaocha.plugin.capture-output
    [clojure.string :as str]
+   [clojure.test :refer [deftest is testing use-fixtures]]
+   [mokujin.log :as log]
+   [mokujin.context.format :as ctx.fmt]
    [clojure.test :refer [deftest is testing]]
    [matcher-combinators.test]
    [matcher-combinators.core :refer [match?]]
@@ -11,6 +14,11 @@
    (org.slf4j MDC)))
 
 (set! *warn-on-reflection* true)
+
+(use-fixtures :each
+  (fn [test]
+    (log/set-context-formatter! ::log/stringify)
+    (test)))
 
 (defn- parse-captured-logs
   "Hooks into Kaocha's capture-output plugin to parse the logs. Easier than digging into the clojure.toools.logging internals."
@@ -123,7 +131,7 @@
   (log/with-context {:foo nil :aha "" :hello "there"}
     (log/info "ahem")
     (is (= {"aha" ""
-            "foo" ""
+            "foo" "null"
             "hello" "there"}
            (log/current-context)))))
 
@@ -253,4 +261,22 @@
                  {:level "WARN" :message "three" :extra "extra"}
                  {:level "WARN" :message "3.5 {:uh \"oh\"}" :extra "extra"}
                  {:level "WARN" :message "four"}]
+                logs))))
+
+(deftest rebinding-context-formatter
+  (log/set-context-formatter! ::log/flatten)
+  (log/with-context {"some" "ctx" :x [{:foo "bar"} {:bar "baz"}]}
+    (log/with-context {:nested "true" :woop [{:x 1} {:y 2} {:z [3 4]}]}
+      (log/warn "hello")))
+  (let [logs (parse-captured-logs)]
+    (is (match? [{:level "WARN"
+                  :message "hello"
+                  :nested "true"
+                  :some "ctx"
+                  :x.0.foo "bar"
+                  :x.1.bar "baz"
+                  :woop.0.x "1"
+                  :woop.1.y "2"
+                  :woop.2.z.0 "3"
+                  :woop.2.z.1 "4"}]
                 logs))))

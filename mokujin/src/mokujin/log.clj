@@ -1,37 +1,36 @@
 (ns mokujin.log
   (:require
-   [clojure.tools.logging :as log])
+   [clojure.tools.logging :as log]
+   [mokujin.context.format :as ctx.fmt])
   (:import
    (org.slf4j MDC)))
 
-(defn- ->str
-  [val] ^String
-  (if val
-    (if (keyword? val)
-      ;; all of these are quite slow
-      #_(.replaceAll ^String (.getName ^clojure.lang.Keyword val) "-" "_")
-      #_(.replaceAll ^String (str (symbol val)) "-" "_")
-      #_(.getName ^clojure.lang.Keyword val)
-      ;; fastest way to get a fully-quallified keyword as a string
-      (str (symbol val))
-      (.toString ^Object val))
-    ""))
+(set! *warn-on-reflection* true)
 
-;; TODO: add context-sanitizer dynamic var to use it to remove or redact specific keys and values from the context map
-;;       or see if this is something that can be pushed down to Logback
-(defn- format-context [ctx]
-  (persistent!
-   (reduce-kv (fn [m k v]
-                (assoc! m (->str k) (->str v)))
-              (transient {})
-              ctx)))
+(def ^:dynamic *context-formatter* ctx.fmt/stringify)
 
-;; TODO: use binding for the context?
+(def formatters
+  {::default ctx.fmt/stringify
+   ::stringify ctx.fmt/stringify
+   ::flatten ctx.fmt/flatten})
+
+(defn set-context-formatter!
+  "Set the context formatter to use for `with-context` and `mdc-put`.
+  The formatter should be a function that takes a context map and returns a new map with stringified keys and values."
+  [formatter]
+  (if-let [fmt (formatters formatter)]
+    (alter-var-root #'*context-formatter* (constantly fmt))
+    (throw (IllegalArgumentException.
+            (str "Unknown context formatter: " formatter " Valid options are: " (keys formatters))))))
+
+;; TODO: use binding for context?
+
+(defn- p! [_ k v] (MDC/put ^String k ^String v))
+
 (defn mdc-put
   "Take a context map and put it into the MDC. Keys and values will be stringified."
   [ctx]
-  (doseq [[k v] (format-context ctx)]
-    (MDC/put ^String k ^String v)))
+  (reduce-kv p! {} (*context-formatter* ctx)))
 
 (defmacro with-context
   "Set  context map for the form. Ideally, the context map should use unqualified keywords or strings for keys.
@@ -141,16 +140,16 @@
   ([level msg context?]
    (with-meta
      `(cond
-        (and (string? ~msg)
-             (map? ~context?)) (with-context ~context?
-                                 (log/log ~level ~msg))
+       (and (string? ~msg)
+            (map? ~context?)) (with-context ~context?
+                                (log/log ~level ~msg))
 
-        (and (string? ~msg)
-             (not (map? ~context?))) (log/log ~level ~msg))
+       (and (string? ~msg)
+            (not (map? ~context?))) (log/log ~level ~msg))
      (meta &form))))
 
 (defmacro logf
-  "Log wrapper which is helpful if you need to programatically control the log level."
+  "Logf wrapper which is helpful if you need to programatically control the log level."
   [level msg & args]
   (with-meta
     `(log/logf ~level ~msg ~@args)
