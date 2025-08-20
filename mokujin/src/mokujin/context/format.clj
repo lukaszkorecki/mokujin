@@ -33,25 +33,6 @@
 
 ;;;;;
 
-(defn- flatten-context
-  "Helper function to flatten the context map, it will recursively walk through the context map and
-  convert all nested maps and collections into a single map keys as vector of segments, e.g. `[:a :b :c]`"
-  [ctx path acc]
-  (cond
-    (map? ctx) (reduce-kv
-                (fn [m k v]
-                  (flatten-context v (conj path k) m))
-                acc
-                ctx)
-
-    (sequential? ctx) (reduce-kv
-                       (fn [m idx v]
-                         (flatten-context v (conj path idx) m))
-                       acc
-                       (vec ctx)) ; ensure indexed for lists/lazy seqs
-    ;; this is a leaf node, so we just stringify it, the `ctx` is not the context map anymore
-    :else (assoc! acc path ctx)))
-
 (defn- path->str [segments]
   (->> segments
        (map ->str) ; ensure all segments are strings
@@ -79,7 +60,27 @@
                        \"f\" \"string\" }
   "
   [ctx]
-  (-> (flatten-context ctx [] (transient {}))
-      (persistent!)
-      (update-keys path->str)
-      (update-vals ->str)))
+  (loop [stack (list [[] ctx]) ; [path-vec node]
+         acc (transient {})]
+    (if (empty? stack)
+      (-> (persistent! acc)
+          (update-keys path->str)
+          (update-vals ->str))
+      (let [[path node] (peek stack)
+            stack' (pop stack)]
+        (cond
+          (map? node) (let [next-stack (reduce-kv
+                                        (fn [st k v] (conj st [(conj path k) v]))
+                                        stack'
+                                        node)]
+                        (recur next-stack acc))
+
+          (sequential? node) (let [vnode (vec node)
+                                   next-stack (reduce-kv
+                                               (fn [st i v] (conj st [(conj path i) v]))
+                                               stack'
+                                               vnode)]
+                               (recur next-stack acc))
+
+          :else
+          (recur stack' (assoc! acc path node)))))))
