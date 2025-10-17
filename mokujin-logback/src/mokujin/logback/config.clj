@@ -90,3 +90,28 @@
 
     [:root {:level "INFO"}
      [:appender-ref {:ref "PLAIN_TEXT"}]]]))
+
+(defn json+otel [& loggers]
+  (data->xml-str
+   [:configuration
+    [:statusListener {:class "ch.qos.logback.core.status.NopStatusListener"}]
+    [:appender {:name "STDOUT_JSON", :class "ch.qos.logback.core.ConsoleAppender"}
+
+     [:encoder {:class "net.logstash.logback.encoder.LogstashEncoder"}
+      [:throwableConverter {:class "net.logstash.logback.stacktrace.ShortenedThrowableConverter"}
+       [:shortenedClassNameLength 25]]
+
+      [:fieldNames
+       [:timestamp "timestamp"]
+       [:version "[ignore]"]
+       [:levelValue "[ignore]"]]]]
+
+    [:appender {:class "io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender"
+                :name "OTEL"}
+     [:addBaggage true]
+     [:appender-ref {:ref "STDOUT_JSON"}]]
+
+    loggers
+
+    [:root {:level "INFO"}
+     [:appender-ref {:ref "OTEL"}]]]))

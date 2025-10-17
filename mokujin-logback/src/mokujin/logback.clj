@@ -33,23 +33,24 @@
 (def ^:private presets
   {::json config/json
    ::json-async config/json-async
+   ::json+otel config/json+otel
    ::text config/text})
 
 (defn ^:private config-type->xml-stream
   [{:keys [config logger-filters]}]
   (cond
-   (vector? config) (str->input-stream (config/data->xml-str config))
+    (vector? config) (str->input-stream (config/data->xml-str config))
     ;; "raw" XML string
-   (string? config) (str->input-stream config)
+    (string? config) (str->input-stream config)
     ;; io/resource most likely?
-   (instance? java.net.URL config) (.openStream ^java.net.URL config)
+    (instance? java.net.URL config) (.openStream ^java.net.URL config)
 
-   ;; one of 'preset' configurations
-   (#{::json ::json-async ::text} config) (let [cnf (apply (get presets config)
-                                                           (config/logger-filters->logback-loggers logger-filters))]
-                                            (str->input-stream cnf))
-   :else (throw
-          (ex-info "Uknown configuration type" {:config config :class (class config)}))))
+    ;; one of 'preset' configurations
+    (contains? presets config) (let [cnf (apply (get presets config)
+                                                (config/logger-filters->logback-loggers logger-filters))]
+                                 (str->input-stream cnf))
+    :else (throw
+           (ex-info "Uknown configuration type" {:config config :class (class config)}))))
 
 (defn configure!
   "Configure logback with the given configuration.
