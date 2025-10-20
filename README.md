@@ -37,7 +37,7 @@
 ;; pass a context map to add structured data to the message
 (log/info "hi!" {:foo "bar" :baz "qux"})
 
-;; context can be set 
+;; context can be set
 (log/with-context {:action "vibe-check"}
   (log/debug "checking the vibes")
   (let [are-you-ok? (do-the-vibe-check)]
@@ -70,7 +70,7 @@ Second part of ensuring that right things are logged and we keep a good performa
 
 ### How does it work?
 
-Mokujin wraps `clojure.tools.logging` and injects SLF4J's MDC into logging events, if provided. 
+Mokujin wraps `clojure.tools.logging` and injects SLF4J's MDC into logging events, if provided.
 Keep in mind that `infof` (and friends) variants are present, but do not support passing the MDC (more on that later).
 
 
@@ -138,7 +138,7 @@ Second difference is that only 1- and 2-arity (or in case of `log/error` 3-arity
 (log/info "hello" "there" "world")
 ```
 
-To help with migration and good log hygine Mokujin ships with custom hooks for `clj-kondo` and 
+To help with migration and good log hygine Mokujin ships with custom hooks for `clj-kondo` and
 report warnings in case of suspicious or incompatible call styles are detected.
 
 
@@ -270,6 +270,32 @@ Logback's configuration system is very powerful, and provides several features, 
 This way we can delegate things like redacting MDC or async appenders to Logback, and keep Mokujin focused on providing streamlined API.
 
 Check `:mokujin.logback/json-async` configuration preset for a good example of how to set up async appenders with MDC support.
+
+
+#### Open Telemetry
+
+
+Open Telemetry supports automatic instrumentation of logging frameworks including Logback. To enable it, you need to:
+
+- start your application with the Open Telemetry Java agent
+- ensure that following environement variables are set:
+
+```
+export OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_CAPTURE_LOGGER_CONTEXT_ATTRIBUTES=true
+export OTEL_INSTRUMENTATION_LOGBACK_APPENDER_EXPERIMENTAL_CAPTURE_MDC_ATTRIBUTES=*
+```
+
+alternatively, you can set these properties via JVM options:
+
+```
+-Dotel.instrumentation.logback.appender.experimental.capture.logger.context.attributes=true
+-Dotel.instrumentation.logback.appender.experimental.capture.mdc.attributes=*
+```
+
+
+From there, Open Telemetry will automatically capture MDC attributes and attach them to spans, inject trace IDs etc.
+
+
 
 ## TODO
 
