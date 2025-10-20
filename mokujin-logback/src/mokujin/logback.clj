@@ -4,6 +4,7 @@
   of the Logback configuration, it just provides a way to configure it at runtime and optionally with EDN data.
   "
   (:require
+   [mokujin.log :as log]
    [mokujin.logback.config :as config])
   (:import
    [ch.qos.logback.classic Level Logger LoggerContext]
@@ -34,6 +35,7 @@
   {::json config/json
    ::json-async config/json-async
    ::json+otel config/json+otel
+   ::text+otel config/text+otel
    ::text config/text})
 
 (defn ^:private config-type->xml-stream
@@ -48,6 +50,8 @@
     ;; one of 'preset' configurations
     (contains? presets config) (let [cnf (apply (get presets config)
                                                 (config/logger-filters->logback-loggers logger-filters))]
+
+                                 (println cnf)
                                  (str->input-stream cnf))
     :else (throw
            (ex-info "Uknown configuration type" {:config config :class (class config)}))))
@@ -83,7 +87,10 @@
     :or {logger-filters []}}]
   (with-open [conf ^java.io.Closeable (config-type->xml-stream {:config config
                                                                 :logger-filters logger-filters})]
-    (initialize-and-configure! conf)))
+    (initialize-and-configure! conf)
+
+    (log/info "Logback configured with" {:config config
+                                         :logger-filters logger-filters})))
 
 (def levels
   {:all Level/ALL

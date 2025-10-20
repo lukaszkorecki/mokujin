@@ -109,9 +109,39 @@
     [:appender {:class "io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender"
                 :name "OTEL"}
      [:addBaggage true]
+     [:captureExperimentalAttributes true]
+     [:captureMarkerAttribute true]
+     [:captureKeyValuePairAttributes true]
+     [:captureLoggerContext true]
+     [:captureMdcAttributes "*"]
      [:appender-ref {:ref "STDOUT_JSON"}]]
 
     loggers
 
     [:root {:level "INFO"}
+     [:appender-ref {:ref "OTEL"}]]]))
+
+(defn text+otel [& loggers]
+  (data->xml-str
+   [:configuration
+    [:statusListener {:class "ch.qos.logback.core.status.NopStatusListener"}]
+    [:appender {:name "PLAIN_TEXT", :class "ch.qos.logback.core.ConsoleAppender"}
+     [:encoder
+      [:pattern "%date [%thread] [%logger] [%level] %msg %mdc%n"]]]
+
+    [:appender {:class "io.opentelemetry.instrumentation.logback.mdc.v1_0.OpenTelemetryAppender"
+                :name "OTEL"}
+     [:addBaggage true]
+     [:captureExperimentalAttributes true]
+     [:captureMarkerAttribute true]
+     [:captureKeyValuePairAttributes true]
+     [:captureLoggerContext true]
+     [:captureMdcAttributes "*"]
+     [:appender-ref {:ref "PLAIN_TEXT"}]
+     ]
+
+    loggers
+
+    [:root {:level "INFO"}
+     [:appender-ref {:ref "PLAIN_TEXT"}]
      [:appender-ref {:ref "OTEL"}]]]))

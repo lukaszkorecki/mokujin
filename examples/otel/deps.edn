@@ -1,0 +1,7 @@
+{:paths ["." "resources"]
+
+ :deps {org.clojars.lukaszkorecki/mokujin {:local/root "../../mokujin"}
+        org.clojars.lukaszkorecki/mokujin-logback {:local/root "../../mokujin-logback"}
+        io.opentelemetry.javaagent/opentelemetry-javaagent {:mvn/version "2.21.0"}}
+
+ :aliases {:run {:main-opts ["-m" "core"]}}}
