@@ -1,6 +1,6 @@
 {:paths ["src"]
  :deps {org.clojure/data.xml {:mvn/version "0.2.0-alpha9"}
-        ch.qos.logback/logback-classic {:mvn/version "1.5.19"
+        ch.qos.logback/logback-classic {:mvn/version "1.5.20"
                                         :exclusions [org.slf4j/slf4j-api]}
         net.logstash.logback/logstash-logback-encoder {:mvn/version "8.1"}}
 
