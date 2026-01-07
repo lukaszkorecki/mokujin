@@ -1,8 +1,8 @@
 {:paths ["src"]
- :deps {org.clojure/data.xml {:mvn/version "0.2.0-alpha9"}
-        ch.qos.logback/logback-classic {:mvn/version "1.5.20"
+ :deps {org.clojure/data.xml {:mvn/version "0.2.0-alpha10"}
+        ch.qos.logback/logback-classic {:mvn/version "1.5.24"
                                         :exclusions [org.slf4j/slf4j-api]}
-        net.logstash.logback/logstash-logback-encoder {:mvn/version "8.1"}}
+        net.logstash.logback/logstash-logback-encoder {:mvn/version "9.0"}}
 
  :aliases {:dev {:extra-paths ["dev-resources"]
                  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
@@ -17,6 +17,6 @@
 
            :run-tests {:main-opts ["-m" "kaocha.runner"]}
 
-           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.10"}
+           :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.12"}
                           slipset/deps-deploy {:mvn/version "0.2.2"}}
                    :ns-default build}}}
