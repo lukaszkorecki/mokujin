@@ -6,17 +6,17 @@ SNAPSHOT ?= false
 LIB = mokujin mokujin-logback
 
 clean:
-	$(foreach lib,$(LIB),clj -T:build clean :lib $(lib);)
+	$(foreach lib,$(LIB),clojure -T:build clean :lib $(lib);)
 
 jar:
-	$(foreach lib,$(LIB),clj -T:build jar :lib $(lib) :snapshot $(SNAPSHOT);)
+	$(foreach lib,$(LIB),clojure -T:build jar :lib $(lib) :snapshot $(SNAPSHOT);)
 
 
 install:
-	$(foreach lib,$(LIB),clj -T:build install :lib $(lib) :snapshot $(SNAPSHOT);)
+	$(foreach lib,$(LIB),clojure -T:build install :lib $(lib) :snapshot $(SNAPSHOT);)
 
 publish: clean jar
-	$(foreach lib,$(LIB),clj -T:build publish :lib $(lib) :snapshot $(SNAPSHOT);)
+	$(foreach lib,$(LIB),clojure -T:build publish :lib $(lib) :snapshot $(SNAPSHOT);)
 
 # Dev/test tasks
 
@@ -28,16 +28,16 @@ test-all: test-core test-logback test-ex-logback test-ex-log4j2
 	@echo "all done"
 
 test-core:
-	cd mokujin && clj -M:dev:test:run-tests
+	cd mokujin && clojure -M:dev:test:run-tests
 
 test-logback:
-	cd mokujin-logback & clj -M:dev:test:run-tests
+	cd mokujin-logback && clojure -M:dev:test:run-tests
 
 test-ex-logback:
-	cd examples/logback && clj -M:run
+	cd examples/logback && clojure -M:run
 
 test-ex-log4j2:
-	cd examples/log4j2 && clj -M:run
+	cd examples/log4j2 && clojure -M:run
 
 benchmark:
 	cd bench && clj -M:benchmark
