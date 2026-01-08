@@ -22,7 +22,7 @@ publish: clean jar
 
 
 update-deps:
-	$(foreach lib,$(LIB),cd $(lib) && clj -M:dev/outdated && cd -;)
+	$(foreach lib,$(LIB),cd $(lib) && clojure -M:dev/outdated && cd -;)
 
 test-all: test-core test-logback test-ex-logback test-ex-log4j2
 	@echo "all done"
@@ -40,7 +40,7 @@ test-ex-log4j2:
 	cd examples/log4j2 && clojure -M:run
 
 benchmark:
-	cd bench && clj -M:benchmark
+	cd bench && clojure -M:benchmark
 
 
 help:
