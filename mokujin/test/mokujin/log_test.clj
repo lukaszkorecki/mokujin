@@ -4,8 +4,7 @@
    kaocha.plugin.capture-output
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [matcher-combinators.test]
-   [matcher-combinators.core :refer [match?]]
+   [matcher-combinators.test :refer [match?]]
    [mokujin.log :as log])
   (:import
    (org.slf4j MDC)))
@@ -91,10 +90,10 @@
 (deftest nested-contexts
   (log/with-context {:level-zero "0"}
     (run-in-thread
-     (fn nested' []
-       (log/with-context {:level-one "yes"}
-         (log/with-context {:level-two "yes"}
-           (log/info "ahem" {:level-three "yes"}))))))
+      (fn nested' []
+        (log/with-context {:level-one "yes"}
+          (log/with-context {:level-two "yes"}
+            (log/info "ahem" {:level-three "yes"}))))))
 
   (let [captured-logs (parse-captured-logs)]
     (testing "contexts can be nested, but only work within current thread"
@@ -139,7 +138,7 @@
                        (log/error "five"))
                      (log/with-context {:foo :bar}
                        (try
-                         (throw (ex-info "this is exception" {}))
+                         (throw (ex-info "this is exception" {:with "data"}))
                          (catch Exception e
                            (log/error e "six" {:fail true})))))
                    (log/info "seven")))
@@ -156,8 +155,7 @@
                    {:nested "again" :foo "bar"}
                    {:fail "true" :nested "again" :foo "bar"}
                    {}]
-                  captured-logs #_(map #(dissoc % :message :level :stack_trace)
-                                       captured-logs))))
+                  captured-logs)))
     (testing "stack trace is included"
       (is (match? [{:fail "true"
                     :nested "again"
@@ -165,7 +163,7 @@
                     :level "ERROR"
                     :message "six"
                     :stack_trace {:count 5
-                                  :message "clojure.lang.ExceptionInfo: this is exception"}}]
+                                  :message "clojure.lang.ExceptionInfo: this is exception {:with \"data\"}"}}]
                   (filter :stack_trace captured-logs))))))
 
 (deftest verify-nested-mdc
