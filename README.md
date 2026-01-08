@@ -9,11 +9,6 @@
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin)
 [![Clojars Project](https://img.shields.io/clojars/v/org.clojars.lukaszkorecki/mokujin-logback.svg)](https://clojars.org/org.clojars.lukaszkorecki/mokujin-logback)
 
-
-> [!WARNING]
-> While Mokujin has been used in live, production applications - it's still under *active* development,
-> consider the API stable-ish, with possible small changes here and there. See [the roadmap](#todo) section.
-
 ## Just enough (structured) logging
 
 ### Quick example
@@ -303,5 +298,4 @@ From there, Open Telemetry will automatically capture MDC attributes and attach 
 - [x] Improve performance of adding/removing keys from the MDC - see Cambium's or Aviso-logging source for a good approach
 - [x] Finalize `log/error` API - it works, but there are cases where its usage can be confusing
 - [x] Split library into core and logback-specific components
-- [ ] timing support - some form of `with-timing` macro or an arg on `with-context`
 - [ ] Provide a way to customize how context data is transformed?
