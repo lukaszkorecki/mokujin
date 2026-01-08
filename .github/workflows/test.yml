@@ -8,7 +8,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  mokujin-test:
+  mokujin:
+    name: Test mokujin core
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -22,18 +23,72 @@ jobs:
       uses: actions/cache@v4
       with:
         path: /root/.m2
-        key: v1-deps-${{ hashFiles('./mokujin/deps.edn') }}-${{ hashFiles('./mokujin-logback/deps.edn') }}
+        key: v1-deps-mokujin-${{ hashFiles('mokujin/deps.edn') }}
 
     - name: Run core tests
       run: cd mokujin && clj -M:dev:test:run-tests
       env:
         TZ: UTC
 
+  mokujin-logback:
+    name: Test mokujin-logback
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: mokujin
+
+    container:
+      image: clojure:openjdk-17-tools-deps-slim-buster
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Cache Clojure deps
+      uses: actions/cache@v4
+      with:
+        path: /root/.m2
+        key: v1-deps-mokujin-logback-${{ hashFiles('mokujin-logback/deps.edn') }}
+
     - name: Run logback extensions tests
       run: cd mokujin-logback && clj -M:dev:test:run-tests
 
+  logback-example:
+    name: Verify logback example
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: mokujin
+
+    container:
+      image: clojure:openjdk-17-tools-deps-slim-buster
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Cache Clojure deps
+      uses: actions/cache@v4
+      with:
+        path: /root/.m2
+        key: v1-deps-logback-example-${{ hashFiles('examples/logback/deps.edn') }}
+
     - name: Verify logback example
       run: cd examples/logback && clj -M:run
+
+  log4j2-example:
+    name: Verify log4j2 example
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: mokujin
+
+    container:
+      image: clojure:openjdk-17-tools-deps-slim-buster
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Cache Clojure deps
+      uses: actions/cache@v4
+      with:
+        path: /root/.m2
+        key: v1-deps-log4j2-example-${{ hashFiles('examples/log4j2/deps.edn') }}
 
     - name: Verify log4j2 example
       run: cd examples/log4j2 && clj -M:run
