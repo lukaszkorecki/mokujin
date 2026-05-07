@@ -95,6 +95,9 @@
    :trace Level/TRACE})
 
 (def level->keyword
+  "Inverse of `levels` - maps a Logback `Level` instance back to the Mokujin
+  level keyword. Public so downstream tooling (e.g. `mokujin.logback.capture`)
+  can translate logging events without re-deriving the mapping."
   (set/map-invert levels))
 
 (defn set-level!

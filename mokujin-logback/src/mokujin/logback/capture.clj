@@ -9,7 +9,7 @@
 (set! *warn-on-reflection* true)
 
 (defn ^:private get-root-logger []
-  (let [logger-context (LoggerFactory/getILoggerFactory)]
+  (let [^LoggerContext logger-context (LoggerFactory/getILoggerFactory)]
     (LoggerContext/.getLogger logger-context ^String Logger/ROOT_LOGGER_NAME)))
 
 (defn ^:private throwable-proxy->map [^IThrowableProxy t]
@@ -29,7 +29,7 @@
                              :mdc (into {} (.getMDCPropertyMap ev))
                              :throwable (throwable-proxy->map (.getThrowableProxy ev))
                              :timestamp (.getInstant ev)})))]
-    (AppenderBase/.setContext appender (LoggerFactory/getILoggerFactory))
+    (AppenderBase/.setContext appender ^LoggerContext (LoggerFactory/getILoggerFactory))
     (AppenderBase/.setName appender "AtomAppender")
     appender))
 
