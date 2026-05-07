@@ -109,14 +109,15 @@
      (.setLevel ^Logger logger ^Level (get levels level :info)))))
 
 (defn get-level
-  "Get current logging level as a keyword.
-  With no args, get the level for the root logger
-  With a name, get the level for the named logger.
+  "Get the effective logging level as a keyword.
+  With no args, get the level for the root logger.
+  With a name, get the level for the named logger - if the named logger has no
+  level set directly, the level inherited from its parent is returned.
   "
   ([]
    (get-level Logger/ROOT_LOGGER_NAME))
   ([name]
    (let [{:keys [logger]} (get-named-logger-and-context name)]
      (get level->keyword
-          (.getLevel ^Logger logger)
+          (.getEffectiveLevel ^Logger logger)
           :off))))
