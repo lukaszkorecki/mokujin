@@ -35,6 +35,23 @@
                     :mdc {"context-thing" "stringified"}
                     :timestamp inst?}]
                   (capture/get-logs)))))
+  (testing "captures throwables logged via log/error"
+    (capture/with-captured-logs
+      (let [cause (ex-info "underlying" {:why :testing})
+            wrapped (ex-info "boom" {:fail true} cause)]
+        (log/error wrapped "something failed" {:request-id "abc"}))
+      (is (match? [{:level :error
+                    :message "something failed"
+                    :mdc {"request-id" "abc"}
+                    :throwable {:class-name "clojure.lang.ExceptionInfo"
+                                :message "boom"
+                                :cause {:class-name "clojure.lang.ExceptionInfo"
+                                        :message "underlying"}}}]
+                  (capture/get-logs)))))
+  (testing "throwable is nil when no exception was logged"
+    (capture/with-captured-logs
+      (log/info "plain message")
+      (is (match? [{:throwable nil}] (capture/get-logs)))))
   (testing "warns with calling get-logs outside of block"
     (is (thrown-with-msg? Exception #"Call get-logs inside of a with-captured-logs block!"
                           (capture/get-logs))))

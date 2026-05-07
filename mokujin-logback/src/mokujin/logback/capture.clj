@@ -1,7 +1,7 @@
 (ns mokujin.logback.capture
   (:require [mokujin.logback])
   (:import
-   [ch.qos.logback.classic.spi ILoggingEvent]
+   [ch.qos.logback.classic.spi ILoggingEvent IThrowableProxy]
    [ch.qos.logback.core AppenderBase Appender]
    [ch.qos.logback.classic Logger LoggerContext]
    [org.slf4j LoggerFactory]))
@@ -9,6 +9,12 @@
 (defn ^:private get-root-logger []
   (let [logger-context (LoggerFactory/getILoggerFactory)]
     (LoggerContext/.getLogger logger-context ^String Logger/ROOT_LOGGER_NAME)))
+
+(defn ^:private throwable-proxy->map [^IThrowableProxy t]
+  (when t
+    (cond-> {:class-name (.getClassName t)
+             :message (.getMessage t)}
+      (.getCause t) (assoc :cause (throwable-proxy->map (.getCause t))))))
 
 (defn atom-appender [logs]
   (let [appender (proxy [AppenderBase] []
@@ -19,6 +25,7 @@
                              :message (.getFormattedMessage ev)
                              :logger-name (.getLoggerName ev)
                              :mdc (into {} (.getMDCPropertyMap ev))
+                             :throwable (throwable-proxy->map (.getThrowableProxy ev))
                              :timestamp (.getInstant ev)})))]
     (AppenderBase/.setContext appender (LoggerFactory/getILoggerFactory))
     (AppenderBase/.setName appender "AtomAppender")
@@ -33,7 +40,8 @@
       (Logger/.addAppender logger appender)
       (f)
       (finally
-        (Logger/.detachAppender logger appender)))))
+        (Logger/.detachAppender logger appender)
+        (Appender/.stop appender)))))
 
 (defmacro with-captured-logs [& body]
   `(let [logs# (atom [])]
