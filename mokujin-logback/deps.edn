@@ -13,6 +13,7 @@
 
            :test {:extra-paths ["dev-resources" "test"]
                   :extra-deps {cheshire/cheshire {:mvn/version "6.1.0"}
+                               nubank/matcher-combinators {:mvn/version "3.9.2"}
                                lambdaisland/kaocha {:mvn/version "1.91.1392"}}}
 
            :run-tests {:main-opts ["-m" "kaocha.runner"]}

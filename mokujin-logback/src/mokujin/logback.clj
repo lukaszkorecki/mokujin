@@ -4,6 +4,7 @@
   of the Logback configuration, it just provides a way to configure it at runtime and optionally with EDN data.
   "
   (:require
+   [clojure.set :as set]
    [mokujin.logback.config :as config])
   (:import
    [ch.qos.logback.classic Level Logger LoggerContext]
@@ -93,9 +94,12 @@
    :error Level/ERROR
    :trace Level/TRACE})
 
+(def level->keyword
+  (set/map-invert levels))
+
 (defn set-level!
   "Set logging level dynamically - can be used to change logging level at runtime
-  If only level (a kewyord of the levels map) is provided, it will set the level for the root logger
+  If only level (a keyword of the levels map) is provided, it will set the level for the root logger
   if name and level are provided, it will set the level for the named logger.
   "
   ([level]
@@ -103,3 +107,16 @@
   ([name level]
    (let [{:keys [logger]} (get-named-logger-and-context name)]
      (.setLevel ^Logger logger ^Level (get levels level :info)))))
+
+(defn get-level
+  "Get current logging level as a keyword.
+  With no args, get the level for the root logger
+  With a name, get the level for the named logger.
+  "
+  ([]
+   (get-level Logger/ROOT_LOGGER_NAME))
+  ([name]
+   (let [{:keys [logger]} (get-named-logger-and-context name)]
+     (get level->keyword
+          (.getLevel ^Logger logger)
+          :off))))
