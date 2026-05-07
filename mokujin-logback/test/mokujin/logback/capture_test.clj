@@ -9,8 +9,9 @@
 (deftest capture-logs-test
   (testing "captures logs from mokujin"
     (capture/with-captured-logs
-      (log/info "This is a test")
-      (log/debug "Oh, hello")
+      (capture/with-root-log-level :debug
+        (log/info "This is a test")
+        (log/debug "Oh, hello"))
       (is (match? [{:level :info
                     :message "This is a test"
                     :logger-name "mokujin.logback.capture-test"

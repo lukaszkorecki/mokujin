@@ -6,6 +6,8 @@
    [ch.qos.logback.classic Logger LoggerContext]
    [org.slf4j LoggerFactory]))
 
+(set! *warn-on-reflection* true)
+
 (defn ^:private get-root-logger []
   (let [logger-context (LoggerFactory/getILoggerFactory)]
     (LoggerContext/.getLogger logger-context ^String Logger/ROOT_LOGGER_NAME)))
