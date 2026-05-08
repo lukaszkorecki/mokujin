@@ -291,6 +291,75 @@ alternatively, you can set these properties via JVM options:
 From there, Open Telemetry will automatically capture MDC attributes and attach them to spans, inject trace IDs etc.
 
 
+## Testing
+
+`mokujin-logback` ships with `mokujin.logback.capture`, a small set of helpers for asserting on log events directly in tests. Instead of parsing rendered log output, you get plain Clojure maps with the level, message, MDC, logger name, thread, timestamp, and any logged throwable.
+
+```clojure
+(require '[mokujin.log :as log]
+         '[mokujin.logback.capture :as capture])
+
+(capture/with-captured-logs
+  (log/with-context {:user-id 1}
+    (log/info "hi")))
+;; => [{:level :info
+;;      :message "hi"
+;;      :logger-name "user"
+;;      :thread-name "nREPL-session-..."
+;;      :mdc {"user-id" "1"}
+;;      :throwable nil
+;;      :timestamp #inst "..."}]
+```
+
+### `with-captured-logs`
+
+Attaches an in-memory appender to the root logger for the duration of the body. Captured events are available via `(capture/get-logs)` from within the block.
+
+```clojure
+(deftest notification-logging
+  (capture/with-captured-logs
+    (handle-notification user notification)
+    (is (match? [{:level :info :message "success" :mdc {"user-id" "42"}}]
+                (capture/get-logs)))))
+```
+
+Calling `get-logs` outside of a `with-captured-logs` block throws — captures are scoped to the block, never global.
+
+### `with-root-log-level`
+
+Captures only see events the logger would have emitted, so DEBUG/TRACE messages are dropped if the root logger is configured at INFO. Wrap the body in `with-root-log-level` to temporarily change the root level for the test:
+
+```clojure
+(capture/with-captured-logs
+  (capture/with-root-log-level :debug
+    (log/debug "diagnostic"))
+  (is (match? [{:level :debug :message "diagnostic"}]
+              (capture/get-logs))))
+```
+
+The previous level is restored on exit, even if the body throws.
+
+### Asserting on exceptions
+
+`log/error` writes the exception (and its full cause chain) to the captured event under `:throwable`:
+
+```clojure
+(capture/with-captured-logs
+  (let [cause   (ex-info "underlying" {:why :testing})
+        wrapped (ex-info "boom" {:fail true} cause)]
+    (log/error wrapped "something failed" {:request-id "abc"}))
+  (is (match? [{:level :error
+                :message "something failed"
+                :mdc {"request-id" "abc"}
+                :throwable {:class-name "clojure.lang.ExceptionInfo"
+                            :message "boom"
+                            :cause {:class-name "clojure.lang.ExceptionInfo"
+                                    :message "underlying"}}}]
+              (capture/get-logs))))
+```
+
+When no exception is logged, `:throwable` is `nil`.
+
 
 ## TODO
 

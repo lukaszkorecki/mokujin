@@ -5,7 +5,7 @@
    (org.slf4j MDC)))
 
 (defn- ->str
-  [val] ^String
+  ^String [val]
   (if val
     (if (keyword? val)
       ;; all of these are quite slow
