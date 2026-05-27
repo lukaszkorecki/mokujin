@@ -15,43 +15,43 @@
 
 
 ```clojure
-;; assuming that log4j2 or logback dependencies & configs are on the classpath, or you're using mokujin-logback
+;; assuming that log4j2 or logback dependencies & configs are on the classpath
+;; and/or you're using mokujin-logback
 (require '[mokujin.log :as log])
 
-
+;; drop-in replacement for clojure.tools.logging:
 ;; just a message
 (log/info "hi!")
 
 ;; logging exceptions
 (try
-   ....
-   (catch Exception e
-     (log/error e "something went wrong")))
+  ....
+  (catch Exception e
+    (log/error e "something went wrong")))
 
-
+;; and now the secret sauce: MDC
 ;; pass a context map to add structured data to the message
 (log/info "hi!" {:foo "bar" :baz "qux"})
 
 ;; context can be set
 (log/with-context {:action "vibe-check"}
   (log/debug "checking the vibes")
-  (let [are-you-ok? (do-the-vibe-check)]
-    (if are-you-ok?
-      (log/info "hi!")
-      (log/warn "something is up!"))))
+  (if-let [are-you-ok? (do-the-vibe-check)]
+    (log/info "hi!" {:is-ok are-you-ok? :success true})
+    (log/warn "something is up!" {:is-ok are-you-ok? :success false})))
 ```
 
 
 ### Rationalle
 
-`clojure.tools.logging` is a Good Enough :tm: solution for majority of logging needs. It's fast, works with any
+`clojure.tools.logging` is a Good Enough :tm: solution for majority of your logging needs. It's fast, works with any
 logging backend supported on the JVM and is simple to use.
 
 The only area where it falls short is producing structured logs.
 
 Sidebar: In the past I'd use [`logfmt`-like](https://brandur.org/logfmt) formatting style when using `infof` (and friends) to produce logs.
 Then I'd configure the log ingester (like Fluentd) to parse log lines using this format. That's fine for simple cases, but as soon as
-exceptions and  stack traces got thrown into the mix, I fell into the deep rabbit hole of multi-line log parsers and my sanity never quite made it back.
+exceptions and stack traces got thrown into the mix, I fell into the deep rabbit hole of multi-line log parsers and my sanity never quite made it back.
 
 What we want instead is descriptive log messages, with the ability to attach structured data to them.
 
