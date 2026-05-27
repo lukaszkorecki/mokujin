@@ -4,7 +4,11 @@
   (:import
    (org.slf4j MDC)))
 
-(defn- ->str
+(def ^:private falsy->str
+  {false "false"
+   nil "null"})
+
+(defn ^:private ->str
   ^String [val]
   (if val
     (if (keyword? val)
@@ -15,11 +19,11 @@
       ;; fastest way to get a fully-quallified keyword as a string
       (str (symbol val))
       (.toString ^Object val))
-    ""))
+    (falsy->str val)))
 
 ;; TODO: add context-sanitizer dynamic var to use it to remove or redact specific keys and values from the context map
 ;;       or see if this is something that can be pushed down to Logback
-(defn- format-context [ctx]
+(defn ^:private format-context [ctx]
   (persistent!
    (reduce-kv (fn [m k v]
                 (assoc! m (->str k) (->str v)))
