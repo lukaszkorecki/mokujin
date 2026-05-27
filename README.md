@@ -79,13 +79,13 @@ processing you can expect a small slow down but still maintain sub-microsecond p
 your typical usage - most of applications running out there do a lot of I/O, where processing times are measured in milliseconds
 or seconds even, so any overhead introduced by logging is negligble.
 
-You can run the benchmark via `clj -M:benchmark`. Latest results (as of 30/03/2025) run on my M4 MBP Pro are:
+You can run the benchmark via `clj -M:benchmark`. Latest results (as of 27/05/2026) run on my M5 MBP Pro are:
 
 ```
-#'mokujin.log-bench/mokujin-log : 76.876114 ns
-#'mokujin.log-bench/mokujin-log+context : 346.391248 ns
-#'mokujin.log-bench/tools-logging-log : 78.078607 ns
-#'mokujin.log-bench/tools-logging-log+context : 221.394879 ns
+#'mokujin.log-bench/mokujin-log : 33.616531 ns
+#'mokujin.log-bench/mokujin-log+context : 172.096508 ns
+#'mokujin.log-bench/tools-logging-log : 34.018827 ns
+#'mokujin.log-bench/tools-logging-log+context : 94.279638 ns
 ```
 
 > [!NOTE]

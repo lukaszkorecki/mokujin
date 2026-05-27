@@ -17,6 +17,12 @@
 
            :run-tests {:main-opts ["-m" "kaocha.runner"]}
 
+           :check {:extra-deps {athos/clj-check {:git/url "https://github.com/athos/clj-check.git"
+                                                 :sha "d997df866b2a04b7ce7b17533093ee0a2e2cb729"}}
+                   :main-opts ["-m" "clj-check.check"
+                               "src"]
+                   :jvm-opts ["-Dclojure.main.report=stderr"]}
+
            :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.13"}
                           slipset/deps-deploy {:mvn/version "0.2.4"}}
                    :ns-default build}}}

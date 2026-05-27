@@ -4,21 +4,23 @@
   (:import
    (org.slf4j MDC)))
 
+(set! *warn-on-reflection* true)
+
 (def ^:private falsy->str
   {false "false"
    nil "null"})
 
+;; all of these are quite slow
+;; (.replaceAll ^String (.getName ^clojure.lang.Keyword val) "-" "_")
+;; (.replaceAll ^String (str (symbol val)) "-" "_")
+;; (.getName ^clojure.lang.Keyword val)
+;; fastest way to get a fully-quallified keyword as a string
 (defn ^:private ->str
   ^String [val]
   (if val
     (if (keyword? val)
-      ;; all of these are quite slow
-      #_(.replaceAll ^String (.getName ^clojure.lang.Keyword val) "-" "_")
-      #_(.replaceAll ^String (str (symbol val)) "-" "_")
-      #_(.getName ^clojure.lang.Keyword val)
-      ;; fastest way to get a fully-quallified keyword as a string
       (str (symbol val))
-      (.toString ^Object val))
+      (Object/.toString val))
     (falsy->str val)))
 
 ;; TODO: add context-sanitizer dynamic var to use it to remove or redact specific keys and values from the context map
