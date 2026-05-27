@@ -1,0 +1,80 @@
+[tools]
+clojure = "latest"
+
+[env]
+SNAPSHOT = "false"
+
+# Build & release tasks
+
+[tasks.clean]
+description = "Clean build artifacts for all libs"
+run = """
+for lib in mokujin mokujin-logback; do
+  clojure -T:build clean :lib $lib
+done
+"""
+
+[tasks.jar]
+description = "Build jars for all libs"
+run = """
+for lib in mokujin mokujin-logback; do
+  clojure -T:build jar :lib $lib :snapshot $SNAPSHOT
+done
+"""
+
+[tasks.install]
+description = "Install jars to local Maven cache"
+depends = ["jar"]
+run = """
+for lib in mokujin mokujin-logback; do
+  clojure -T:build install :lib $lib :snapshot $SNAPSHOT
+done
+"""
+
+[tasks.publish]
+description = "Clean, jar, and publish all libs"
+depends = ["clean", "jar"]
+run = """
+for lib in mokujin mokujin-logback; do
+  clojure -T:build publish :lib $lib :snapshot $SNAPSHOT
+done
+"""
+
+# Dev/test tasks
+
+[tasks.update-deps]
+description = "Check for outdated deps in all libs"
+run = """
+for lib in mokujin mokujin-logback; do
+  (cd $lib && clojure -M:dev/outdated)
+done
+"""
+
+[tasks.test-core]
+description = "Run mokujin core tests"
+dir = "{{config_root}}/mokujin"
+run = "clojure -M:dev:test:run-tests"
+
+[tasks.test-logback]
+description = "Run mokujin-logback tests"
+dir = "{{config_root}}/mokujin-logback"
+run = "clojure -M:dev:test:run-tests"
+
+[tasks.test-ex-logback]
+description = "Verify logback example"
+dir = "{{config_root}}/examples/logback"
+run = "clojure -M:run"
+
+[tasks.test-ex-log4j2]
+description = "Verify log4j2 example"
+dir = "{{config_root}}/examples/log4j2"
+run = "clojure -M:run"
+
+[tasks.test-all]
+description = "Run all tests and examples"
+depends = ["test-core", "test-logback", "test-ex-logback", "test-ex-log4j2"]
+
+[tasks.benchmark]
+description = "Run benchmarks"
+dir = "{{config_root}}/bench"
+run = "clojure -M:benchmark"

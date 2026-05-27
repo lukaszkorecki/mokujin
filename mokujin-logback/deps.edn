@@ -8,7 +8,7 @@
                  :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
                             "-Duser.timezone=UTC"
                             "-Dfile.encoding=UTF-8"]
-                 :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.17"}
+                 :extra-deps {org.slf4j/jcl-over-slf4j {:mvn/version "2.0.18"}
                               org.clojars.lukaszkorecki/mokujin {:local/root "../mokujin"}}}
 
            :test {:extra-paths ["dev-resources" "test"]
@@ -19,5 +19,5 @@
            :run-tests {:main-opts ["-m" "kaocha.runner"]}
 
            :build {:deps {io.github.clojure/tools.build {:mvn/version "0.10.13"}
-                          slipset/deps-deploy {:mvn/version "0.2.3"}}
+                          slipset/deps-deploy {:mvn/version "0.2.4"}}
                    :ns-default build}}}
