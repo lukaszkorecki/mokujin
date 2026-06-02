@@ -79,13 +79,13 @@ processing you can expect a small slow down but still maintain sub-microsecond p
 your typical usage - most of applications running out there do a lot of I/O, where processing times are measured in milliseconds
 or seconds even, so any overhead introduced by logging is negligble.
 
-You can run the benchmark via `clj -M:benchmark`. Latest results (as of 30/03/2025) run on my M4 MBP Pro are:
+You can run the benchmark via `clj -M:benchmark`. Latest results (as of 27/05/2026) run on my M5 MBP Pro are:
 
 ```
-#'mokujin.log-bench/mokujin-log : 76.876114 ns
-#'mokujin.log-bench/mokujin-log+context : 346.391248 ns
-#'mokujin.log-bench/tools-logging-log : 78.078607 ns
-#'mokujin.log-bench/tools-logging-log+context : 221.394879 ns
+#'mokujin.log-bench/mokujin-log : 33.616531 ns
+#'mokujin.log-bench/mokujin-log+context : 172.096508 ns
+#'mokujin.log-bench/tools-logging-log : 34.018827 ns
+#'mokujin.log-bench/tools-logging-log+context : 94.279638 ns
 ```
 
 > [!NOTE]
@@ -137,24 +137,19 @@ To help with migration and good log hygine Mokujin ships with custom hooks for `
 report warnings in case of suspicious or incompatible call styles are detected.
 
 
-### The context
+### The context map
 
-
-The context is a `Map[String]String` internally. To make it easier to work with standard log ingestion infrastructure,
-all keywords present in the keys and values are converted to `"snake_case"` strings. Other value types are stringified.
-This frees you up from figuring out what can and cannot be serialized by the appender that your logging backend is using.
-If you need to change the layout of the produced log line, you can and should defer it to the appender configuration instead.
+The context is a `Map[String]String` internally, so Mokujin will stringify both keys and values, including qualified keywords, while maintining performance. `nil` is serialized as `"null"`.
+From here, you can use your logging library to control how MDC is logged using appender configuration - Mokujin stays out of your way and doesn't make any assumptions about events thing will be logged.
 
 > [!WARNING]
-> Nested maps or other complex data types are not allowed - this is something that might change in the future.
+> Nested maps or other complex data types are not allowed - this is something that might change in the future. For your own sanity, and your wallet - best not to dump huge objects into your log storage.
 
 
 #### `with-context`
 
 You can use `with-context` macro, to set context for a form, request handler body etc.
 Contexts can be nested, but see the next section for caveats.
-
-All map keys and values will be stringified using `name` + `str` combo.
 
 ```clojure
 (log/with-context ctx body)

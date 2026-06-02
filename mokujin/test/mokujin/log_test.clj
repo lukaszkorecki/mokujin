@@ -1,9 +1,9 @@
 (ns mokujin.log-test
   (:require
    [cheshire.core :as json]
-   kaocha.plugin.capture-output
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
+   kaocha.plugin.capture-output
    [matcher-combinators.test :refer [match?]]
    [mokujin.log :as log])
   (:import
@@ -90,10 +90,10 @@
 (deftest nested-contexts
   (log/with-context {:level-zero "0"}
     (run-in-thread
-      (fn nested' []
-        (log/with-context {:level-one "yes"}
-          (log/with-context {:level-two "yes"}
-            (log/info "ahem" {:level-three "yes"}))))))
+     (fn nested' []
+       (log/with-context {:level-one "yes"}
+         (log/with-context {:level-two "yes"}
+           (log/info "ahem" {:level-three "yes"}))))))
 
   (let [captured-logs (parse-captured-logs)]
     (testing "contexts can be nested, but only work within current thread"
@@ -118,13 +118,24 @@
             "qualified.keyword.is-here/test" "bar"}
            (log/current-context)))))
 
-(deftest works-with-tags-with-no-value
-  (log/with-context {:foo nil :aha "" :hello "there"}
-    (log/info "ahem")
-    (is (= {"aha" ""
-            "foo" ""
-            "hello" "there"}
-           (log/current-context)))))
+(deftest falsy-value-handling-in-context-test
+  (testing "`nil` is returned as 'null' string"
+    (log/with-context {:foo nil}
+      (log/info "ahem")
+      (is (= {"foo" "null"}
+             (log/current-context)))))
+
+  (testing "`false` is stringified"
+    (log/with-context {:foo false}
+      (log/info "ahem")
+      (is (= {"foo" "false"}
+             (log/current-context)))))
+
+  (testing "edge case: empty string will be included as-is"
+    (log/with-context {:foo ""}
+      (log/info "ahem")
+      (is (= {"foo" ""}
+             (log/current-context))))))
 
 (deftest structured-log-test
   (run-in-thread (fn structured' []
