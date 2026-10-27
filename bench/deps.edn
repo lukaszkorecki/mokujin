@@ -1,8 +1,15 @@
 {:paths ["."]
  :deps {org.clojars.lukaszkorecki/mokujin {:local/root "../mokujin"}
-        criterium/criterium {:mvn/version "0.4.6"}
-        org.slf4j/slf4j-nop {:mvn/version "2.0.17"}}
- :aliases {:benchmark {:main-opts ["-m" "mokujin.log-bench"]
+        criterium/criterium {:mvn/version "0.4.6"}}
+ :aliases {:benchmark {:extra-deps {org.slf4j/slf4j-nop {:mvn/version "2.0.17"}}
+                       :main-opts ["-m" "mokujin.log-bench"]
                        :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
                                   "-Duser.timezone=UTC"
-                                  "-Dfile.encoding=UTF-8"]}}}
+                                  "-Dfile.encoding=UTF-8"]}
+           :benchmark-error {:extra-paths ["resources"]
+                             :extra-deps {ch.qos.logback/logback-classic {:mvn/version "1.6.3"
+                                                                          :exclusions [org.slf4j/slf4j-api]}}
+                             :main-opts ["-m" "mokujin.error-bench"]
+                             :jvm-opts ["-XX:-OmitStackTraceInFastThrow"
+                                        "-Duser.timezone=UTC"
+                                        "-Dfile.encoding=UTF-8"]}}}
