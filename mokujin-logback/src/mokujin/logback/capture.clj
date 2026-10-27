@@ -12,9 +12,9 @@
   events you want to assert on would otherwise be filtered out."
   (:require [mokujin.logback])
   (:import
+   [ch.qos.logback.classic Logger LoggerContext]
    [ch.qos.logback.classic.spi ILoggingEvent IThrowableProxy]
    [ch.qos.logback.core AppenderBase Appender]
-   [ch.qos.logback.classic Logger LoggerContext]
    [org.slf4j LoggerFactory]))
 
 (set! *warn-on-reflection* true)
@@ -99,4 +99,3 @@
   (if *logs*
     @*logs*
     (throw (ex-info "Call get-logs inside of a with-captured-logs block!" {}))))
-
