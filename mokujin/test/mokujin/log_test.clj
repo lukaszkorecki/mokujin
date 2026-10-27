@@ -177,6 +177,49 @@
                                   :message "clojure.lang.ExceptionInfo: this is exception {:with \"data\"}"}}]
                   (filter :stack_trace captured-logs))))))
 
+(deftest error-arity-dispatch-test
+  (let [exc (ex-info "boom" {})
+        msg "runtime message"
+        ctx {:runtime true}
+        evals (atom 0)]
+    (run-in-thread (fn error-dispatch' []
+                     (log/error "literal msg" {:literal true})
+                     (log/error exc "literal exc msg")
+                     (log/error msg {:map-literal true})
+                     (log/error msg ctx)
+                     (log/error exc msg)
+                     (log/error (do (swap! evals inc) msg) ctx)
+                     (log/error (do (swap! evals inc) exc) msg)))
+
+    (testing "first argument is evaluated once"
+      (is (= 2 @evals))))
+
+  (let [captured-logs (parse-captured-logs)]
+    (is (match? [{:message "literal msg" :literal "true" :stack_trace nil}
+                 {:message "literal exc msg" :stack_trace {:message "clojure.lang.ExceptionInfo: boom {}"}}
+                 {:message "runtime message" :map-literal "true" :stack_trace nil}
+                 {:message "runtime message" :runtime "true" :stack_trace nil}
+                 {:message "runtime message" :stack_trace {:message "clojure.lang.ExceptionInfo: boom {}"}}
+                 {:message "runtime message" :runtime "true" :stack_trace nil}
+                 {:message "runtime message" :stack_trace {:message "clojure.lang.ExceptionInfo: boom {}"}}]
+                captured-logs))
+
+    (testing "context doesn't leak into exception logs"
+      (is (every? #(nil? (:runtime %)) (filter :stack_trace captured-logs)))))
+
+  (is (= {} (log/current-context))))
+
+(deftest error-compile-time-dispatch-test
+  (let [runtime-check? (fn [form]
+                         (->> (macroexpand-1 form)
+                              (tree-seq coll? seq)
+                              (some #{'clojure.core/instance?})
+                              boolean))]
+    (is (false? (runtime-check? '(mokujin.log/error "msg" ctx))))
+    (is (false? (runtime-check? '(mokujin.log/error exc "msg"))))
+    (is (false? (runtime-check? '(mokujin.log/error msg {:a 1}))))
+    (is (true? (runtime-check? '(mokujin.log/error a b))))))
+
 (deftest verify-nested-mdc
   ;; just so we have some more threads-in-threads
   (is (= 2 (count (pmap (fn [f] (f))

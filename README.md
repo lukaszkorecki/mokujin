@@ -102,7 +102,7 @@ You can run the benchmark via `clj -M:benchmark`. Latest results (as of 27/05/20
 (log/warn [msg] [msg ctx])
 (log/debug [msg] [msg ctx])
 (log/trace [msg] [msg ctx])
-(log/error [msg] [exc msg] [exc msg ctx])
+(log/error [msg] [msg ctx] [exc msg] [exc msg ctx])
 (log/infof [fmt & fmt-args])
 (log/warnf [fmt & fmt-args])
 (log/debugf [fmt & fmt-args])
@@ -110,6 +110,9 @@ You can run the benchmark via `clj -M:benchmark`. Latest results (as of 27/05/20
 (log/errorf [fmt & fmt-args])
 (log/with-context [ctx & body])
 ```
+
+`(log/error a b)` is resolved at compile time when `a` is a string literal (`[msg ctx]`), `b` is a string literal (`[exc msg]`) or `b` is a map literal (`[msg ctx]`).
+Otherwise, `a` is checked with `instance? Throwable` at runtime.
 
 Just like `clojure.tools.logging`, Mokujin preserves caller context, and ensures that the right
 information (namespace, line numbers) is attached to the log event.

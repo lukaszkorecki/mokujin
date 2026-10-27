@@ -28,3 +28,9 @@
 
 ;; valid
 (log/error "oh no")
+
+;; valid
+(log/error "oh no" {:test 1})
+
+;; invalid
+(log/error "oh no" "bananas")

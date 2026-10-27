@@ -14,7 +14,6 @@
  :linters {:redundant-ignore {:exclude [:clojure-lsp/unused-public-var]}
            :mokujin.log/error-log-too-many-args {:level :error}
            :mokujin.log/log-statement-too-many-arguments {:level :error}
-           :mokujin.log/error-log-context-not-supported {:level :warning}
            :mokujin.log/error-log-map-args {:level :warning}
            :mokujin.log/log-message-not-string {:level :warning}
            :mokujin.log/log-context-not-map {:level :warning}}}

@@ -8,25 +8,29 @@
 
 #_{:clj-kondo/ignore [:clojure-lsp/unused-public-var :redundant-ignore]}
 (defn error-log-args
-  "Verifies that log/error can be only called with one or two args:
+  "Verifies that log/error is called with one of:
+  (log/error msg)
+  (log/error msg ctx)
   (log/error exc msg)
-  (log/error msg)"
+  (log/error exc msg ctx)"
   [{:keys [node]}]
   (let [sexpr (api/sexpr node)
         arg-count (count (rest sexpr))
         [arg1 arg2 arg3] (rest sexpr)]
     (cond
-      ;; error only accepts [msg], [throwable msg] [throwable msg ctx] as args, so anything more than that is not valid
+      ;; error only accepts [msg], [msg ctx], [throwable msg] [throwable msg ctx] as args, so anything more than that is not valid
       (> arg-count 3)
       (register! node "too many arguments passed to log/error" {:type :mokujin.log/invalid-arg-count})
 
-      ;; we have two args but first is a string, indicates that 2nd arg is a context
-      (and (= arg-count 2)
-           (string? arg1))
-      (register! node "log/error doesn't accept context maps as 2nd argument!" {:type :mokujin.log/error-log-context-not-supported})
-
-      (or (map? arg1) (map? arg2))
+      (or (map? arg1)
+          (and (= arg-count 3) (map? arg2)))
       (register! node "log/error doesn't accept maps as log statements" {:type :mokujin.log/error-log-map-args})
+
+      ;; string message as 1st arg means 2nd arg is the context
+      (and (= arg-count 2)
+           (string? arg1)
+           (not (map? arg2)))
+      (register! node "log context is not a map" {:type :mokujin.log/log-context-not-map})
 
       (and (= arg-count 3)
            (not (map? arg3)))

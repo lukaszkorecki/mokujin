@@ -83,21 +83,38 @@
 (deflogger debug)
 (deflogger trace)
 
+(defn- error-msg+ctx [msg ctx]
+  `(with-context ~ctx
+     (log/log :error ~msg)))
+
+(defn- error-exc+msg [exc msg]
+  `(log/log :error ~exc ~msg))
+
 ;; Error is a special case because it handles throwables
 (defmacro error
-  "Log an error message.
+  "Log an error message, with optional exception and/or context map.
   [msg]
+  [msg ctx]
   [exc msg]
-  [ctx exc msg]
-  Context map can only be provided when passing exception AND message,
-  otherwise, wrap your call in with-context"
+  [exc msg ctx]
+  2-arity calls are resolved at compile time when the message is a string literal
+  or the context is a map literal, otherwise the first argument is checked for being a Throwable at runtime."
+  {:arglists '([msg] [msg ctx] [exc msg] [exc msg ctx])}
   ([msg]
    (with-meta
      `(log/log :error ~msg)
      (meta &form)))
-  ([exc msg]
+  ([a b]
    (with-meta
-     `(log/log :error ~exc ~msg)
+     (cond
+       (string? a) (error-msg+ctx a b)
+       (string? b) (error-exc+msg a b)
+       (map? b) (error-msg+ctx a b)
+       :else (let [a' (gensym "a")]
+               `(let [~a' ~a]
+                  (if (instance? Throwable ~a')
+                    ~(error-exc+msg a' b)
+                    ~(error-msg+ctx a' b)))))
      (meta &form)))
   ([exc msg ctx]
    (with-meta
