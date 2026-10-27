@@ -17,18 +17,18 @@ jobs:
       image: clojure:openjdk-17-tools-deps-slim-buster
 
     steps:
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-    - name: Cache Clojure deps
-      uses: actions/cache@v5
-      with:
-        path: /root/.m2
-        key: v1-deps-mokujin-${{ hashFiles('mokujin/deps.edn') }}
+      - name: Cache Clojure deps
+        uses: actions/cache@v6
+        with:
+          path: /root/.m2
+          key: v1-deps-mokujin-${{ hashFiles('mokujin/deps.edn') }}
 
-    - name: Run core tests
-      run: cd mokujin && clj -M:dev:test:run-tests
-      env:
-        TZ: UTC
+      - name: Run core tests
+        run: cd mokujin && clj -M:dev:test:run-tests
+        env:
+          TZ: UTC
 
   mokujin-logback:
     name: Test mokujin-logback
@@ -40,16 +40,16 @@ jobs:
       image: clojure:openjdk-17-tools-deps-slim-buster
 
     steps:
-    - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-    - name: Cache Clojure deps
-      uses: actions/cache@v4
-      with:
-        path: /root/.m2
-        key: v1-deps-mokujin-logback-${{ hashFiles('mokujin-logback/deps.edn') }}
+      - name: Cache Clojure deps
+        uses: actions/cache@v6
+        with:
+          path: /root/.m2
+          key: v1-deps-mokujin-logback-${{ hashFiles('mokujin-logback/deps.edn') }}
 
-    - name: Run logback extensions tests
-      run: cd mokujin-logback && clj -M:dev:test:run-tests
+      - name: Run logback extensions tests
+        run: cd mokujin-logback && clj -M:dev:test:run-tests
 
   logback-example:
     name: Verify logback example
@@ -61,16 +61,16 @@ jobs:
       image: clojure:openjdk-17-tools-deps-slim-buster
 
     steps:
-    - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-    - name: Cache Clojure deps
-      uses: actions/cache@v4
-      with:
-        path: /root/.m2
-        key: v1-deps-logback-example-${{ hashFiles('examples/logback/deps.edn') }}
+      - name: Cache Clojure deps
+        uses: actions/cache@v6
+        with:
+          path: /root/.m2
+          key: v1-deps-logback-example-${{ hashFiles('examples/logback/deps.edn') }}
 
-    - name: Verify logback example
-      run: cd examples/logback && clj -M:run
+      - name: Verify logback example
+        run: cd examples/logback && clj -M:run
 
   log4j2-example:
     name: Verify log4j2 example
@@ -82,13 +82,13 @@ jobs:
       image: clojure:openjdk-17-tools-deps-slim-buster
 
     steps:
-    - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-    - name: Cache Clojure deps
-      uses: actions/cache@v4
-      with:
-        path: /root/.m2
-        key: v1-deps-log4j2-example-${{ hashFiles('examples/log4j2/deps.edn') }}
+      - name: Cache Clojure deps
+        uses: actions/cache@v6
+        with:
+          path: /root/.m2
+          key: v1-deps-log4j2-example-${{ hashFiles('examples/log4j2/deps.edn') }}
 
-    - name: Verify log4j2 example
-      run: cd examples/log4j2 && clj -M:run
+      - name: Verify log4j2 example
+        run: cd examples/log4j2 && clj -M:run
